@@ -1,140 +1,220 @@
 
 
-# helo.ai Developer Console — Implementation Plan
+# helo.ai Developer Console -- Apps and Capabilities Architecture
 
-## Overview
-A sleek, Vercel/Linear-inspired developer console for managing CPaaS messaging products. This will be a fully interactive UI prototype with mock data, dark/light mode support, and realistic state management.
+## What's Changing
 
----
+The current console has a flat hierarchy: **Account > Products > APIs**. This update introduces two new layers to match the real technical model:
 
-## Phase 1: Foundation & Layout
+```text
+Account
+  -> Apps (NEW -- containers for products)
+    -> Products (SMS, RCS, WhatsApp, Webhooks)
+      -> Messaging Capabilities (NEW -- what users actually enable)
+        -> APIs (read-only, auto-exposed based on enabled capabilities)
+```
 
-### Global Structure
-- **Fixed left sidebar navigation** with collapsible support
-  - Overview, Products, API Credentials, Webhooks, Logs & Events, Settings
-  - Active route highlighting
-  - Dark/light theme toggle in sidebar footer
-
-- **Main content area** with consistent header pattern
-  - Page title + breadcrumbs
-  - Contextual actions (right-aligned)
-
-### Design System
-- Dark mode as default (Vercel/Linear aesthetic)
-- Monospace accents for code, keys, and technical data
-- High contrast status badges
-- Subtle borders, minimal shadows
-- Information-dense but breathable layouts
+This is a significant structural change that touches routing, state management, navigation, and most screens.
 
 ---
 
-## Phase 2: Core Screens
+## New Screens
 
-### 1. Login Screen
-- Clean email/password form
-- helo.ai branding (minimal, text-only logo)
-- No illustrations, pure utility
-- Mock authentication → redirects to Overview
+### 1. Apps List (`/apps`)
+The new entry point after login. Replaces the current Overview as the landing page.
 
-### 2. Overview Dashboard
-- **Enabled Products Grid** — Status cards for SMS, RCS, WhatsApp, Webhooks
-- **Account Status Panel** — Active/Restricted/Pending approval
-- **Blocking Issues Alert** — Red banner if issues exist
-- **API Key Status** — Quick view with copy action
-- No charts, no metrics — just operational status
+- Grid of App cards, each showing:
+  - App name (e.g., "Production App", "Staging App")
+  - Environment label (Production / Staging / Development)
+  - Enabled products count (e.g., "3 of 4 products enabled")
+  - Overall health status: **Healthy** or **Action Required**
+- "Create App" button in the page header
+- Create App dialog: name + environment selector
+- Two pre-seeded mock apps for demonstration
 
-### 3. Products List
-- Product cards for: SMS, RCS, WhatsApp, Webhooks
-- Each card shows:
-  - Product icon + name
-  - Status badge (Disabled / Configured / Restricted / Active)
-  - Primary CTA (Enable / Configure / View Details)
-- Clicking opens Product Detail Page
+### 2. App Overview (`/apps/:appId/overview`)
+Replaces the current Overview screen, now scoped to a single App.
 
-### 4. Product Detail Page (template for all products)
-Consistent 5-section layout:
-
-**A. Status Section**
-- Operational state with colored indicator
-- Reason if blocked + external dependency label
-
-**B. Prerequisites Checklist**
-- Required/Optional tags
-- Completed/Pending/Failed status
-- Source of truth indicator
-
-**C. Configuration Form**
-- Raw input fields per product
-- Save creates versioned snapshot (mock)
-
-**D. API Surface**
-- Endpoint list (visible only if enabled)
-- Sample curl with syntax highlighting
-- Required headers table
-- Error codes reference
-
-**E. Execution Feedback**
-- Last 10 events table
-- Error details with timestamp, reason, provider ref
-
-### 5. API Credentials Page
-- Primary API key display (masked by default, reveal on click)
-- Copy to clipboard with toast confirmation
-- Rotate key (confirmation modal + mock regeneration)
-- Revoke key (danger action with confirmation)
-- Scope warning copy
-
-### 6. Webhooks Page
-- Endpoint URL configuration
-- Shared secret (auto-generated, copyable)
-- Retry policy display (read-only)
-- Event types list with sample payloads
-- Delivery attempts table (success/failure, HTTP status, timestamp)
-
-### 7. Logs & Events
-- Filterable stream by: Product, Event type, Date range
-- Event list table with:
-  - Timestamp, Product, Event type, Status
-- Click → Slide-out drawer with:
-  - Raw JSON payload (formatted, copyable)
-  - Correlation ID
-  - External reference ID
-
-### 8. Settings
-- Account name (editable)
-- Timezone selector
-- **Danger Zone** panel:
-  - Disable product toggle
-  - Revoke API key button
+- Same content as before (account status, blocking issues, API key, products grid)
+- But all data is scoped to the selected App
+- Sidebar shows the App name and environment at the top
+- Breadcrumbs: Apps > [App Name] > Overview
 
 ---
 
-## Phase 3: Interactivity & Mock Data
+## Modified Screens
 
-### State Management
-- Product enable/disable toggles persist in session
-- API key rotation generates new mock key
-- Configuration saves show success toast
+### 3. Sidebar Navigation (App-Scoped)
+When inside an App, the sidebar shows:
 
-### Mock Data Sets
-- Realistic API keys (format: `helo_live_xxxxxxxxxxxx`)
-- Sample webhook events (message.sent, message.delivered, message.failed)
-- Log entries with real-looking timestamps and payloads
-- Provider references (Twilio, Meta, Google RCS)
+- App name + environment badge at the top (replaces "Account" indicator)
+- "Back to Apps" link above the nav items
+- Same nav items: Overview, Products, API Credentials, Webhooks, Logs, Settings
+- All routes are now prefixed with `/apps/:appId/`
 
-### UI Behaviors
-- Copy-to-clipboard with visual feedback
-- Confirmation modals for destructive actions
-- Loading states for async operations (simulated)
-- Toast notifications for all actions
+### 4. Product Detail -- NEW Section B: Messaging Capabilities
+This is the most important change. The Product Detail page gains a new section between Status and API Surface.
+
+**Section B: Messaging Capabilities**
+
+Each capability is rendered as a row within a card:
+
+| Column | Content |
+|--------|---------|
+| Name | Capability name (e.g., "Template Messages") |
+| Description | One-line value description |
+| Status | Enabled / Disabled / Restricted badge |
+| Requirements | Tags for: Approval, Billing, Compliance |
+| Action | Enable button, "Request Access" link, or "View reason" for blocked |
+
+**Capabilities per product:**
+
+- **SMS**: Basic MT, Unicode and Long SMS, Delivery Receipts, Two-Way SMS
+- **RCS**: Text Messages, Rich Cards, Carousels, Suggested Actions, File Transfer
+- **WhatsApp**: Template Messages, Session Messages, Media Messages, Interactive Messages, Catalog Messages
+- **Webhooks**: Event Subscriptions, Retry Management (simpler set)
+
+**How this changes the API Surface section:**
+
+- APIs are no longer always shown for an enabled product
+- Each API endpoint is linked to a specific capability
+- Only APIs for **enabled** capabilities appear in Section D
+- When all capabilities are disabled, the API section shows: "Enable messaging capabilities above to see available API endpoints"
+
+### 5. Routes Update
+
+All inner routes become App-scoped:
+
+```text
+/apps                              -- Apps list (new)
+/apps/:appId/overview              -- App overview
+/apps/:appId/products              -- Products list
+/apps/:appId/products/:productId   -- Product detail
+/apps/:appId/credentials           -- API credentials
+/apps/:appId/webhooks              -- Webhooks
+/apps/:appId/logs                  -- Logs and events
+/apps/:appId/settings              -- Settings
+```
+
+### 6. Credentials Screen
+Minor update: text now says "App-level API key" instead of account-level. Scope warning references enabled products **and messaging capabilities**.
+
+### 7. Login Redirect
+After login, redirect to `/apps` instead of `/overview`.
 
 ---
 
-## Deliverables
-- 8+ fully navigable screens
-- Dark/light mode toggle
-- Interactive state changes throughout
-- Realistic mock data populating all views
-- Responsive sidebar (collapsible on smaller screens)
-- Production-quality Vercel/Linear aesthetic
+## Technical Details
+
+### Data Model Changes (AppContext)
+
+New types to add:
+
+```text
+CapabilityStatus = "enabled" | "disabled" | "restricted"
+
+MessagingCapability = {
+  id: string
+  name: string
+  description: string
+  status: CapabilityStatus
+  requirements: ("approval" | "billing" | "compliance")[]
+  linkedEndpoints: string[]   // endpoint IDs that become visible when enabled
+}
+
+HeloApp = {
+  id: string
+  name: string
+  environment: "production" | "staging" | "development"
+  apiKey: string
+  status: "healthy" | "action_required"
+  products: Product[]
+  webhookUrl: string
+  webhookSecret: string
+  webhookEvents: WebhookEvent[]
+  logEvents: LogEvent[]
+}
+```
+
+Product type gains a `capabilities` field:
+
+```text
+Product = {
+  ...existing fields
+  capabilities: MessagingCapability[]
+}
+```
+
+Product config gains capability-linked endpoints:
+
+```text
+Endpoint = {
+  ...existing fields
+  capabilityId: string   // links to capability that must be enabled
+}
+```
+
+### New State Actions
+
+- `createApp(name, environment)` -- adds a new App to the list
+- `selectApp(appId)` -- sets the current active App context
+- `toggleCapability(appId, productId, capabilityId)` -- enable/disable a capability
+- `requestCapabilityAccess(appId, productId, capabilityId)` -- mock access request
+
+### Existing Actions Updated
+
+All existing actions (`updateProduct`, `rotateApiKey`, `setWebhookUrl`, etc.) become scoped to the current App.
+
+### Mock Data
+
+Two pre-seeded Apps:
+
+1. **"Production App"** (environment: production)
+   - SMS: active, most capabilities enabled
+   - RCS: configured, some capabilities pending
+   - WhatsApp: restricted, capabilities blocked
+   - Webhooks: active
+
+2. **"Staging App"** (environment: staging)
+   - SMS: active, all capabilities enabled
+   - All others: disabled
+
+---
+
+## Files to Create
+
+| File | Purpose |
+|------|---------|
+| `src/pages/Apps.tsx` | Apps list screen |
+| `src/components/CapabilityRow.tsx` | Reusable capability row component |
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/contexts/AppContext.tsx` | Add App, Capability types; restructure state; add new actions |
+| `src/App.tsx` | Update routes to App-scoped paths; add Apps page |
+| `src/components/layout/AppSidebar.tsx` | App name display, "Back to Apps" link, dynamic route prefixes |
+| `src/components/layout/DashboardLayout.tsx` | Pass sidebar context for current App |
+| `src/pages/Overview.tsx` | Scope to current App; update breadcrumbs |
+| `src/pages/Products.tsx` | Scope to current App; update links |
+| `src/pages/ProductDetail.tsx` | Add Messaging Capabilities section; make API Surface capability-driven |
+| `src/pages/Credentials.tsx` | Update copy to reference App-level key and capabilities |
+| `src/pages/Webhooks.tsx` | Scope to current App |
+| `src/pages/Logs.tsx` | Scope to current App |
+| `src/pages/Settings.tsx` | Scope to current App |
+| `src/pages/Login.tsx` | Redirect to `/apps` after login |
+| `src/components/layout/PageHeader.tsx` | No structural changes needed |
+| `src/components/StatusBadge.tsx` | Add "enabled" status variant for capabilities |
+
+## Implementation Sequence
+
+1. Update `AppContext.tsx` with new data model (Apps, Capabilities, mock data)
+2. Create `Apps.tsx` list screen and `CapabilityRow.tsx` component
+3. Update `App.tsx` routing to App-scoped paths
+4. Update `AppSidebar.tsx` with App context and "Back to Apps" navigation
+5. Update `DashboardLayout.tsx` for App-aware layout
+6. Update `ProductDetail.tsx` with Messaging Capabilities section and capability-driven APIs
+7. Update remaining screens (Overview, Products, Credentials, Webhooks, Logs, Settings) for App scoping
+8. Update `Login.tsx` redirect and `StatusBadge.tsx` for new status types
 
