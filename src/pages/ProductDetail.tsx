@@ -3,32 +3,41 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useApp } from "@/contexts/AppContext";
 import { StatusBadge } from "@/components/StatusBadge";
+import { CapabilityRow } from "@/components/CapabilityRow";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Check, X, ExternalLink, Copy, Check as CheckIcon } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
-const productConfigs: Record<string, { fields: { name: string; label: string; placeholder: string; required: boolean }[]; endpoints: { method: string; path: string; description: string }[]; prerequisites: { name: string; required: boolean; completed: boolean; source: string }[] }> = {
+interface EndpointDef {
+  id: string;
+  method: string;
+  path: string;
+  description: string;
+  capabilityId: string;
+}
+
+const productConfigs: Record<string, {
+  fields: { name: string; label: string; placeholder: string; required: boolean }[];
+  endpoints: EndpointDef[];
+  prerequisites: { name: string; required: boolean; completed: boolean; source: string }[];
+}> = {
   sms: {
     fields: [
       { name: "senderId", label: "Sender ID", placeholder: "ACME", required: true },
       { name: "callbackUrl", label: "Callback URL", placeholder: "https://api.example.com/sms/callback", required: false },
     ],
     endpoints: [
-      { method: "POST", path: "/v1/sms/send", description: "Send an SMS message" },
-      { method: "GET", path: "/v1/sms/{messageId}", description: "Get message status" },
-      { method: "GET", path: "/v1/sms/messages", description: "List sent messages" },
+      { id: "sms_send", method: "POST", path: "/v1/sms/send", description: "Send an SMS message", capabilityId: "sms_basic_mt" },
+      { id: "sms_status", method: "GET", path: "/v1/sms/{messageId}", description: "Get message status", capabilityId: "sms_dlr" },
+      { id: "sms_list", method: "GET", path: "/v1/sms/messages", description: "List sent messages", capabilityId: "sms_dlr" },
+      { id: "sms_inbound", method: "GET", path: "/v1/sms/inbound", description: "List inbound messages", capabilityId: "sms_two_way" },
     ],
     prerequisites: [
       { name: "Account verification", required: true, completed: true, source: "Internal" },
@@ -42,9 +51,11 @@ const productConfigs: Record<string, { fields: { name: string; label: string; pl
       { name: "verificationToken", label: "Verification Token", placeholder: "token-from-google", required: true },
     ],
     endpoints: [
-      { method: "POST", path: "/v1/rcs/send", description: "Send an RCS message" },
-      { method: "POST", path: "/v1/rcs/rich-card", description: "Send a rich card" },
-      { method: "GET", path: "/v1/rcs/{messageId}", description: "Get message status" },
+      { id: "rcs_send", method: "POST", path: "/v1/rcs/send", description: "Send an RCS message", capabilityId: "rcs_text" },
+      { id: "rcs_rich_card", method: "POST", path: "/v1/rcs/rich-card", description: "Send a rich card", capabilityId: "rcs_rich_card" },
+      { id: "rcs_carousel", method: "POST", path: "/v1/rcs/carousel", description: "Send a carousel", capabilityId: "rcs_carousel" },
+      { id: "rcs_status", method: "GET", path: "/v1/rcs/{messageId}", description: "Get message status", capabilityId: "rcs_text" },
+      { id: "rcs_file", method: "POST", path: "/v1/rcs/file", description: "Send a file", capabilityId: "rcs_file" },
     ],
     prerequisites: [
       { name: "Account verification", required: true, completed: true, source: "Internal" },
@@ -59,9 +70,11 @@ const productConfigs: Record<string, { fields: { name: string; label: string; pl
       { name: "businessAccountId", label: "Business Account ID", placeholder: "9876543210", required: true },
     ],
     endpoints: [
-      { method: "POST", path: "/v1/whatsapp/send", description: "Send a WhatsApp message" },
-      { method: "POST", path: "/v1/whatsapp/template", description: "Send a template message" },
-      { method: "GET", path: "/v1/whatsapp/{messageId}", description: "Get message status" },
+      { id: "wa_send", method: "POST", path: "/v1/whatsapp/send", description: "Send a WhatsApp message", capabilityId: "wa_session" },
+      { id: "wa_template", method: "POST", path: "/v1/whatsapp/template", description: "Send a template message", capabilityId: "wa_template" },
+      { id: "wa_status", method: "GET", path: "/v1/whatsapp/{messageId}", description: "Get message status", capabilityId: "wa_session" },
+      { id: "wa_interactive", method: "POST", path: "/v1/whatsapp/interactive", description: "Send interactive message", capabilityId: "wa_interactive" },
+      { id: "wa_catalog", method: "POST", path: "/v1/whatsapp/catalog", description: "Send catalog message", capabilityId: "wa_catalog" },
     ],
     prerequisites: [
       { name: "Account verification", required: true, completed: true, source: "Internal" },
@@ -83,40 +96,49 @@ const productConfigs: Record<string, { fields: { name: string; label: string; pl
 };
 
 export default function ProductDetail() {
-  const { productId } = useParams<{ productId: string }>();
-  const { products, logEvents, updateProduct } = useApp();
+  const { appId, productId } = useParams<{ appId: string; productId: string }>();
+  const { apps, updateProduct, toggleCapability, requestCapabilityAccess } = useApp();
   const { toast } = useToast();
   const [copied, setCopied] = useState<string | null>(null);
 
-  const product = products.find((p) => p.id === productId);
+  const app = apps.find((a) => a.id === appId);
+  const product = app?.products.find((p) => p.id === productId);
   const config = productId ? productConfigs[productId] : null;
 
-  if (!product || !config) {
-    return <Navigate to="/products" replace />;
-  }
+  if (!app || !product || !config) return <Navigate to={appId ? `/apps/${appId}/products` : "/apps"} replace />;
 
-  const productEvents = logEvents
+  const enabledCapabilityEndpoints = new Set(
+    product.capabilities.filter((c) => c.status === "enabled").flatMap((c) => c.linkedEndpoints)
+  );
+  const visibleEndpoints = config.endpoints.filter((e) => enabledCapabilityEndpoints.has(e.id));
+
+  const productEvents = app.logEvents
     .filter((e) => e.product.toLowerCase() === product.name.split(" ")[0].toLowerCase())
     .slice(0, 10);
 
-  const copyCurl = (endpoint: { method: string; path: string }) => {
-    const curl = `curl -X ${endpoint.method} \\
-  'https://api.helo.ai${endpoint.path}' \\
-  -H 'Authorization: Bearer YOUR_API_KEY' \\
-  -H 'Content-Type: application/json'`;
+  const copyCurl = (endpoint: EndpointDef) => {
+    const curl = `curl -X ${endpoint.method} \\\n  'https://api.helo.ai${endpoint.path}' \\\n  -H 'Authorization: Bearer YOUR_API_KEY' \\\n  -H 'Content-Type: application/json'`;
     navigator.clipboard.writeText(curl);
     setCopied(endpoint.path);
     toast({ title: "Copied", description: "cURL command copied to clipboard" });
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const handleSave = () => {
-    toast({ title: "Configuration saved", description: "Your changes have been saved successfully." });
-  };
+  const handleSave = () => toast({ title: "Configuration saved", description: "Your changes have been saved successfully." });
 
   const handleEnable = () => {
-    updateProduct(product.id, { status: "configured" });
+    updateProduct(app.id, product.id, { status: "configured" });
     toast({ title: "Product enabled", description: `${product.name} has been enabled.` });
+  };
+
+  const handleToggleCap = (capId: string) => {
+    toggleCapability(app.id, product.id, capId);
+    toast({ title: "Capability updated" });
+  };
+
+  const handleRequestAccess = (capId: string) => {
+    requestCapabilityAccess(app.id, product.id, capId);
+    toast({ title: "Access requested", description: "Your request has been submitted for review." });
   };
 
   return (
@@ -124,22 +146,18 @@ export default function ProductDetail() {
       <PageHeader
         title={product.name}
         breadcrumbs={[
-          { label: "Products", href: "/products" },
+          { label: "Apps", href: "/apps" },
+          { label: app.name },
+          { label: "Products", href: `/apps/${appId}/products` },
           { label: product.name },
         ]}
-        actions={
-          product.status === "disabled" ? (
-            <Button onClick={handleEnable}>Enable Product</Button>
-          ) : null
-        }
+        actions={product.status === "disabled" ? <Button onClick={handleEnable}>Enable Product</Button> : null}
       />
 
       <div className="space-y-6">
-        {/* Status Section */}
+        {/* Section A: Status */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Status</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-base">Status</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Operational State</span>
@@ -148,42 +166,41 @@ export default function ProductDetail() {
             {product.externalDependency && (
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">External Dependency</span>
-                <span className="text-sm flex items-center gap-1">
-                  {product.externalDependency}
-                  <ExternalLink className="h-3 w-3" />
-                </span>
+                <span className="text-sm flex items-center gap-1">{product.externalDependency}<ExternalLink className="h-3 w-3" /></span>
               </div>
             )}
             {product.blockingReason && (
-              <div className="p-3 bg-warning/10 border border-warning/20 rounded text-sm text-warning">
-                {product.blockingReason}
-              </div>
+              <div className="p-3 bg-warning/10 border border-warning/20 rounded text-sm text-warning">{product.blockingReason}</div>
             )}
           </CardContent>
         </Card>
 
-        {/* Prerequisites Section */}
+        {/* Section B: Messaging Capabilities */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Prerequisites</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-base">Messaging Capabilities</CardTitle></CardHeader>
+          <CardContent>
+            {product.capabilities.map((cap) => (
+              <CapabilityRow
+                key={cap.id}
+                capability={cap}
+                onToggle={() => handleToggleCap(cap.id)}
+                onRequestAccess={() => handleRequestAccess(cap.id)}
+              />
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Prerequisites */}
+        <Card>
+          <CardHeader><CardTitle className="text-base">Prerequisites</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-2">
               {config.prerequisites.map((prereq, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between py-2 border-b border-border last:border-0"
-                >
+                <div key={index} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                   <div className="flex items-center gap-3">
-                    {prereq.completed ? (
-                      <Check className="h-4 w-4 text-success" />
-                    ) : (
-                      <X className="h-4 w-4 text-muted-foreground" />
-                    )}
+                    {prereq.completed ? <Check className="h-4 w-4 text-success" /> : <X className="h-4 w-4 text-muted-foreground" />}
                     <span className="text-sm">{prereq.name}</span>
-                    {prereq.required && (
-                      <span className="text-xs bg-muted px-1.5 py-0.5 rounded">Required</span>
-                    )}
+                    {prereq.required && <span className="text-xs bg-muted px-1.5 py-0.5 rounded">Required</span>}
                   </div>
                   <span className="text-xs text-muted-foreground">{prereq.source}</span>
                 </div>
@@ -192,85 +209,60 @@ export default function ProductDetail() {
           </CardContent>
         </Card>
 
-        {/* Configuration Section */}
+        {/* Configuration */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Configuration</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-base">Configuration</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             {config.fields.map((field) => (
               <div key={field.name} className="space-y-2">
-                <Label htmlFor={field.name}>
-                  {field.label}
-                  {field.required && <span className="text-destructive ml-1">*</span>}
-                </Label>
-                <Input
-                  id={field.name}
-                  placeholder={field.placeholder}
-                  className="font-mono text-sm"
-                />
+                <Label htmlFor={field.name}>{field.label}{field.required && <span className="text-destructive ml-1">*</span>}</Label>
+                <Input id={field.name} placeholder={field.placeholder} className="font-mono text-sm" />
               </div>
             ))}
             <Button onClick={handleSave}>Save Configuration</Button>
           </CardContent>
         </Card>
 
-        {/* API Surface Section */}
-        {product.status !== "disabled" && config.endpoints.length > 0 && (
+        {/* Section C: API Surface (capability-driven) */}
+        {product.status !== "disabled" && (
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">API Endpoints</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="text-base">API Endpoints</CardTitle></CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-24">Method</TableHead>
-                    <TableHead>Endpoint</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead className="w-16"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {config.endpoints.map((endpoint) => (
-                    <TableRow key={endpoint.path}>
-                      <TableCell>
-                        <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
-                          {endpoint.method}
-                        </span>
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {endpoint.path}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {endpoint.description}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => copyCurl(endpoint)}
-                        >
-                          {copied === endpoint.path ? (
-                            <CheckIcon className="h-4 w-4 text-success" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </TableCell>
+              {visibleEndpoints.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-24">Method</TableHead>
+                      <TableHead>Endpoint</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="w-16"></TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {visibleEndpoints.map((endpoint) => (
+                      <TableRow key={endpoint.path}>
+                        <TableCell><span className="font-mono text-xs bg-muted px-2 py-1 rounded">{endpoint.method}</span></TableCell>
+                        <TableCell className="font-mono text-sm">{endpoint.path}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{endpoint.description}</TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="icon" onClick={() => copyCurl(endpoint)}>
+                            {copied === endpoint.path ? <CheckIcon className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-sm text-muted-foreground">Enable messaging capabilities above to see available API endpoints.</p>
+              )}
             </CardContent>
           </Card>
         )}
 
-        {/* Execution Feedback Section */}
+        {/* Section E: Recent Events */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Recent Events</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-base">Recent Events</CardTitle></CardHeader>
           <CardContent>
             {productEvents.length > 0 ? (
               <Table>
@@ -285,16 +277,10 @@ export default function ProductDetail() {
                 <TableBody>
                   {productEvents.map((event) => (
                     <TableRow key={event.id}>
-                      <TableCell className="font-mono text-xs">
-                        {new Date(event.timestamp).toLocaleString()}
-                      </TableCell>
+                      <TableCell className="font-mono text-xs">{new Date(event.timestamp).toLocaleString()}</TableCell>
                       <TableCell className="text-sm">{event.eventType}</TableCell>
-                      <TableCell>
-                        <StatusBadge status={event.status} />
-                      </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">
-                        {event.providerRef || "—"}
-                      </TableCell>
+                      <TableCell><StatusBadge status={event.status} /></TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">{event.providerRef || "—"}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

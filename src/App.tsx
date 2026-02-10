@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AppProvider, useApp } from "@/contexts/AppContext";
 import Login from "./pages/Login";
+import Apps from "./pages/Apps";
 import Overview from "./pages/Overview";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
@@ -19,17 +20,13 @@ const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useApp();
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useApp();
-  if (isAuthenticated) {
-    return <Navigate to="/overview" replace />;
-  }
+  if (isAuthenticated) return <Navigate to="/apps" replace />;
   return <>{children}</>;
 }
 
@@ -37,70 +34,15 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route
-        path="/login"
-        element={
-          <PublicRoute>
-            <Login />
-          </PublicRoute>
-        }
-      />
-      <Route
-        path="/overview"
-        element={
-          <ProtectedRoute>
-            <Overview />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/products"
-        element={
-          <ProtectedRoute>
-            <Products />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/products/:productId"
-        element={
-          <ProtectedRoute>
-            <ProductDetail />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/credentials"
-        element={
-          <ProtectedRoute>
-            <Credentials />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/webhooks"
-        element={
-          <ProtectedRoute>
-            <Webhooks />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/logs"
-        element={
-          <ProtectedRoute>
-            <Logs />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <Settings />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+      <Route path="/apps" element={<ProtectedRoute><Apps /></ProtectedRoute>} />
+      <Route path="/apps/:appId/overview" element={<ProtectedRoute><Overview /></ProtectedRoute>} />
+      <Route path="/apps/:appId/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
+      <Route path="/apps/:appId/products/:productId" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
+      <Route path="/apps/:appId/credentials" element={<ProtectedRoute><Credentials /></ProtectedRoute>} />
+      <Route path="/apps/:appId/webhooks" element={<ProtectedRoute><Webhooks /></ProtectedRoute>} />
+      <Route path="/apps/:appId/logs" element={<ProtectedRoute><Logs /></ProtectedRoute>} />
+      <Route path="/apps/:appId/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
