@@ -56,6 +56,9 @@ export interface LogEvent {
 export interface HeloApp {
   id: string;
   name: string;
+  email: string;
+  description: string;
+  invitedDevelopers: string[];
   environment: AppEnvironment;
   apiKey: string;
   status: AppHealth;
@@ -79,7 +82,7 @@ interface AppState {
 interface AppContextType extends AppState {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
-  createApp: (name: string, environment: AppEnvironment) => void;
+  createApp: (name: string, email: string, environment: AppEnvironment, description: string, invitedDevelopers: string[]) => void;
   selectApp: (appId: string) => void;
   currentApp: HeloApp | null;
   rotateApiKey: (appId: string) => void;
@@ -188,14 +191,16 @@ const generateMockLogEvents = (): LogEvent[] => {
 
 const initialApps: HeloApp[] = [
   {
-    id: "app_prod_001", name: "Production App", environment: "production",
+    id: "app_prod_001", name: "Production App", email: "admin@acme.com", description: "Main production messaging application", invitedDevelopers: ["dev@acme.com"],
+    environment: "production",
     apiKey: generateApiKey(), status: "action_required",
     products: buildProducts("production"),
     webhookUrl: "https://api.example.com/webhooks/helo", webhookSecret: `whsec_${generateId()}${generateId()}`,
     webhookEvents: generateMockWebhookEvents(), logEvents: generateMockLogEvents(),
   },
   {
-    id: "app_stg_002", name: "Staging App", environment: "staging",
+    id: "app_stg_002", name: "Staging App", email: "admin@acme.com", description: "Staging environment for testing", invitedDevelopers: [],
+    environment: "staging",
     apiKey: generateApiKey(), status: "healthy",
     products: buildProducts("staging"),
     webhookUrl: "", webhookSecret: `whsec_${generateId()}${generateId()}`,
@@ -231,9 +236,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const logout = () => setState((prev) => ({ ...prev, isAuthenticated: false, currentAppId: null }));
 
-  const createApp = (name: string, environment: AppEnvironment) => {
+  const createApp = (name: string, email: string, environment: AppEnvironment, description: string, invitedDevelopers: string[]) => {
     const newApp: HeloApp = {
-      id: `app_${generateId()}`, name, environment,
+      id: `app_${generateId()}`, name, email, description, invitedDevelopers, environment,
       apiKey: generateApiKey(), status: "healthy",
       products: [
         { id: "sms", name: "SMS Messaging", status: "disabled", icon: "MessageSquare", description: "Send and receive SMS messages globally", externalDependency: "Carrier Networks", capabilities: smsCapabilities.map((c) => ({ ...c, status: "disabled" as CapabilityStatus })) },

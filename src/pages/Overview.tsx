@@ -1,98 +1,116 @@
-import { useParams, Navigate, Link } from "react-router-dom";
+import { useParams, Navigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useApp } from "@/contexts/AppContext";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Copy, Check, Eye, EyeOff } from "lucide-react";
+import { Copy, Check, Eye, EyeOff, MessageSquare, Smartphone, MessageCircle, Webhook } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { ChannelConfigModal } from "@/components/ChannelConfigModal";
+import type { Product } from "@/contexts/AppContext";
+
+const productIcons: Record<string, React.ReactNode> = {
+  sms: <MessageSquare className="h-5 w-5" />,
+  rcs: <Smartphone className="h-5 w-5" />,
+  whatsapp: <MessageCircle className="h-5 w-5" />,
+  webhooks: <Webhook className="h-5 w-5" />,
+};
 
 export default function Overview() {
   const { appId } = useParams<{ appId: string }>();
-  const { apps, accountStatus, blockingIssues } = useApp();
+  const { apps, updateProduct } = useApp();
   const app = apps.find((a) => a.id === appId);
-  const [showKey, setShowKey] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [configProduct, setConfigProduct] = useState<Product | null>(null);
   const { toast } = useToast();
 
   if (!app) return <Navigate to="/apps" replace />;
 
-  const copyApiKey = () => {
-    navigator.clipboard.writeText(app.apiKey);
-    setCopied(true);
-    toast({ title: "Copied", description: "API key copied to clipboard" });
-    setTimeout(() => setCopied(false), 2000);
+  const copyToClipboard = (value: string, field: string) => {
+    navigator.clipboard.writeText(value);
+    setCopiedField(field);
+    toast({ title: "Copied", description: `${field} copied to clipboard` });
+    setTimeout(() => setCopiedField(null), 2000);
   };
 
-  const maskedKey = app.apiKey.slice(0, 10) + "••••••••••••••••••••";
+  const maskedSecret = app.apiKey.slice(0, 10) + "••••••••••••••••••••";
+
+  const handleChannelSave = (productId: string) => {
+    updateProduct(app.id, productId, { status: "configured" });
+  };
 
   return (
     <DashboardLayout>
       <PageHeader title="Overview" breadcrumbs={[{ label: "Apps", href: "/apps" }, { label: app.name }, { label: "Overview" }]} />
 
-      {blockingIssues.length > 0 && (
-        <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-          <div>
-            <h3 className="font-medium text-destructive">Blocking Issues</h3>
-            <ul className="mt-1 text-sm text-destructive/80">
-              {blockingIssues.map((issue, index) => <li key={index}>• {issue}</li>)}
-            </ul>
+      {/* Credentials Section */}
+      <Card className="mb-6">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-medium">App Credentials</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* App ID */}
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-xs text-muted-foreground block mb-1">App ID</span>
+              <code className="text-sm font-mono bg-muted px-3 py-1.5 rounded">{app.id}</code>
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => copyToClipboard(app.id, "App ID")} className="shrink-0">
+              {copiedField === "App ID" ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
+            </Button>
           </div>
-        </div>
-      )}
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base font-medium">Account Status</CardTitle></CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Status</span>
-              <StatusBadge status={accountStatus === "active" ? "active" : accountStatus === "restricted" ? "restricted" : "pending"} />
+          {/* App Secret */}
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-xs text-muted-foreground block mb-1">App Secret</span>
+              <code className="text-sm font-mono bg-muted px-3 py-1.5 rounded">{showSecret ? app.apiKey : maskedSecret}</code>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base font-medium">App API Key</CardTitle></CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 text-sm font-mono bg-muted px-3 py-2 rounded">{showKey ? app.apiKey : maskedKey}</code>
-              <Button variant="ghost" size="icon" onClick={() => setShowKey(!showKey)} className="shrink-0">
-                {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            <div className="flex gap-1">
+              <Button variant="ghost" size="icon" onClick={() => setShowSecret(!showSecret)} className="shrink-0">
+                {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
-              <Button variant="ghost" size="icon" onClick={copyApiKey} className="shrink-0">
-                {copied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
+              <Button variant="ghost" size="icon" onClick={() => copyToClipboard(app.apiKey, "App Secret")} className="shrink-0">
+                {copiedField === "App Secret" ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
               </Button>
             </div>
-            <Link to={`/apps/${appId}/credentials`} className="text-xs text-muted-foreground hover:text-foreground mt-2 inline-block">
-              Manage credentials →
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      <h2 className="text-lg font-medium mt-8 mb-4">Enabled Products</h2>
+      {/* Channel Products */}
+      <h2 className="text-lg font-medium mb-4">Channel Products</h2>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {app.products.map((product) => (
-          <Card key={product.id} className="hover:border-foreground/20 transition-colors">
+          <Card
+            key={product.id}
+            className="hover:border-foreground/20 transition-colors cursor-pointer"
+            onClick={() => setConfigProduct(product)}
+          >
             <CardContent className="pt-6">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-medium">{product.name}</h3>
-                <StatusBadge status={product.status} />
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded bg-muted">{productIcons[product.id]}</div>
+                  <h3 className="font-medium text-sm">{product.name}</h3>
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground mb-4">{product.description}</p>
-              <Button variant="outline" size="sm" asChild>
-                <Link to={`/apps/${appId}/products/${product.id}`}>
-                  {product.status === "disabled" ? "Enable" : "View Details"}
-                </Link>
-              </Button>
+              <StatusBadge status={product.status} />
+              <p className="text-xs text-muted-foreground mt-2">{product.description}</p>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {configProduct && (
+        <ChannelConfigModal
+          product={configProduct}
+          open={!!configProduct}
+          onOpenChange={(open) => !open && setConfigProduct(null)}
+          onSave={handleChannelSave}
+        />
+      )}
     </DashboardLayout>
   );
 }
