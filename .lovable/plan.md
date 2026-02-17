@@ -1,102 +1,120 @@
 
 
-# Revamped App Creation and App-Specific Page Flow
+# WhatsApp Product Page with API Catalog
 
-## What Changes
+## Overview
 
-The current Create App modal only collects name and environment. The app detail page (Overview) shows products as navigable links. This update replaces that with a streamlined two-step flow:
-
-1. **Enhanced Create App modal** with more fields
-2. **New App-specific landing page** showing App ID, App Secret, and channel product cards that open configuration modals inline (no page navigation for initial setup)
+After configuring a product (e.g., WhatsApp) via the channel config modal, the user is navigated to a dedicated product page. This page lists all WhatsApp APIs from the provided CSV as individual line items, each with an activation control. Activating an API reveals its request structure with code samples in multiple languages.
 
 ---
 
-## 1. Create App Modal (Enhanced)
+## Flow Change
 
-The dialog in `Apps.tsx` gets these new fields:
+**Current behavior:** Clicking a product card on the Overview page opens a config modal. Saving the modal updates the status and closes the modal.
 
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| App Name | Text input | Yes | Already exists |
-| Email Account | Text input (email) | Yes | The account this app binds to |
-| Environment | Select | Yes | Already exists (Production/Staging/Development) |
-| Description | Textarea | No | What the app does |
-| Invite Developers | Multi-input (email tags) | No | Add email addresses for developer role access |
+**New behavior:** Saving the config modal still updates the product status, but now also navigates the user to `/apps/:appId/products/:productId` -- the product detail page.
 
-**Invite Developers behavior:**
-- A text input where the user types an email and presses Enter or clicks "Add"
-- Each added email appears as a removable tag/chip below the input
-- Purely optional -- can be left empty
-
-**Data model changes in `AppContext.tsx`:**
-- `HeloApp` gains: `email: string`, `description: string`, `invitedDevelopers: string[]`
-- `createApp` signature becomes: `createApp(name, email, environment, description, invitedDevelopers)`
+This applies to all products, but the WhatsApp page will be the first to have a full API catalog from the CSV data.
 
 ---
 
-## 2. App Card on Apps List
+## WhatsApp Product Page Layout
 
-No major change to the card layout. The new fields (email, description) are stored but the card continues to show: name, environment badge, product count, and health status. The description could optionally appear as a one-line truncated subtitle under the app name.
+The page at `/apps/:appId/products/whatsapp` will show:
 
----
-
-## 3. App-Specific Page (replaces current Overview)
-
-When clicking an app card, the user lands on a redesigned page at `/apps/:appId/overview`. The layout changes to:
-
-### Top Section: App Credentials
-A card displaying:
-- **App ID** -- shown in monospace, with a copy button (e.g., `app_prod_001`)
-- **App Secret** -- shown as dots (`••••••••••••••••••••`), with a reveal toggle and copy button
-
-This replaces the current "App API Key" card. The App Secret is the existing `apiKey` field, just renamed for clarity.
-
-### Bottom Section: Channel Products Grid
-A grid of product cards (SMS, RCS, WhatsApp, Webhooks). Each card shows:
-- Channel icon and name
-- Current status badge
-- Short description
-
-**Clicking a product card opens a modal (not a page redirect).** The modal contains channel-specific configuration fields:
-
-| Channel | Modal Fields |
-|---------|-------------|
-| **SMS** | Sender ID (required), Callback URL (optional) |
-| **RCS** | RCS Agent ID (required), Verification Token (required) |
-| **WhatsApp** | WABA ID (required), WABA Phone Number (required), Business Account ID (required) |
-| **Webhooks** | Endpoint URL (required), Authorization Header (optional) |
-
-The modal has:
-- Channel name as title
+### Section 1: Page Header
+- Title: "WhatsApp Messaging"
+- Breadcrumbs: Apps > [App Name] > Products > WhatsApp Messaging
 - Status badge
-- Input fields with labels and placeholders
-- "Save" and "Cancel" buttons
-- Saving triggers a toast confirmation and updates the product status from "disabled" to "configured"
 
-The full Product Detail page (`/apps/:appId/products/:productId`) still exists for deeper configuration (capabilities, API endpoints, prerequisites, events) -- this modal is just the quick-setup entry point.
+### Section 2: API Catalog (the main content)
+
+A list of all 52 WhatsApp APIs from the CSV, displayed as line items within a card. Each line item shows:
+
+| Element | Description |
+|---------|-------------|
+| API Category name | e.g., "Send Message", "Business Profile", "Template Create" |
+| Purpose | One-line description from the "Purpose in Console" column |
+| Method badge | GET / POST / DELETE shown as a colored pill |
+| Endpoint path | Monospace text showing the path |
+| Layer badge | "WABA" or "Phone" or "Media" tag |
+| Activation control | Either a toggle switch OR a "Request Access" button |
+
+**Activation control logic (randomized per API):**
+- APIs classified as **MVP** in the CSV get a direct toggle switch (roughly 60% of APIs)
+- APIs classified as **BSP Required**, **Internal Only**, or **Future Scope** get a "Request Access" button instead
+- This creates a natural mix where basic APIs are self-service and advanced ones require approval
+- The randomization is seeded so it stays consistent across renders
+
+### Section 3: Expanded API Detail (shown when activated)
+
+When a user toggles an API ON, the row expands to reveal:
+
+**Request structure panel:**
+- Base URL: `https://graph.facebook.com/v24.0`
+- Full endpoint path with the required ID placeholder
+- Method and required headers (Authorization: Bearer token)
+- Required scope badge
+
+**Code samples with language tabs:**
+- **cURL** (default)
+- **Python** (using `requests`)
+- **Node.js** (using `fetch`)
+- **PHP** (using `curl`)
+
+Each code block:
+- Has syntax-highlighted formatting (monospace, colored keywords)
+- Includes a copy button
+- Shows the actual endpoint path and method from the CSV
+- Uses placeholder values for IDs and tokens
 
 ---
 
-## Files to Modify
+## Data Structure
 
-| File | Changes |
-|------|---------|
-| `src/contexts/AppContext.tsx` | Add `email`, `description`, `invitedDevelopers` to `HeloApp`. Update `createApp` signature and mock data. Rename `apiKey` display label concept (field stays the same). |
-| `src/pages/Apps.tsx` | Expand Create App dialog with email, description, textarea, and developer invite tag input. Optionally show description on card. |
-| `src/pages/Overview.tsx` | Redesign: top section becomes App ID + App Secret. Bottom section becomes product cards grid with click-to-open configuration modals. |
+A new data file or constant will hold the parsed WhatsApp API catalog:
+
+```text
+WhatsAppApi = {
+  id: string              // e.g., "send_message"
+  category: string        // e.g., "Send Message"
+  endpoint: string        // e.g., "/{PHONE_NUMBER_ID}/messages"
+  method: string          // "GET" | "POST" | "DELETE" | "GET/POST"
+  requiredId: string      // "WABA_ID" | "PHONE_NUMBER_ID" | "MEDIA_ID"
+  purpose: string         // from "Purpose in Console"
+  scope: string           // "whatsapp_business_management" | "whatsapp_business_messaging"
+  classification: string  // "MVP" | "BSP Required" | "Internal Only" | "Future Scope"
+  layer: string           // "WABA" | "Phone" | "Media"
+  accessType: "toggle" | "request"  // derived from classification
+  enabled: boolean        // runtime state
+}
+```
+
+**52 APIs total** from the CSV (excluding empty rows and header info).
+
+---
 
 ## Files to Create
 
 | File | Purpose |
 |------|---------|
-| `src/components/EmailTagInput.tsx` | Reusable component for adding/removing email tags (used in invite developers field) |
-| `src/components/ChannelConfigModal.tsx` | Modal component for channel-specific asset configuration (WABA ID, Sender ID, etc.) |
+| `src/data/whatsappApis.ts` | Static data file with all 52 WhatsApp APIs parsed from the CSV |
+| `src/components/ApiLineItem.tsx` | Reusable component for a single API row with toggle/request-access and expandable code panel |
+| `src/components/CodeSample.tsx` | Tabbed code sample component with cURL, Python, Node.js, PHP |
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/pages/ProductDetail.tsx` | Replace the current generic layout with the API catalog for WhatsApp. Other products keep the existing layout. |
+| `src/components/ChannelConfigModal.tsx` | After saving, navigate to the product detail page using `useNavigate` |
+| `src/pages/Overview.tsx` | Pass navigate capability so modal save triggers redirect |
 
 ## Implementation Sequence
 
-1. Update `AppContext.tsx` data model with new `HeloApp` fields and updated `createApp`
-2. Create `EmailTagInput.tsx` component
-3. Update `Apps.tsx` with the expanded Create App modal
-4. Create `ChannelConfigModal.tsx` for channel-specific configuration
-5. Redesign `Overview.tsx` with App ID/Secret section and product cards with modal triggers
+1. Create `src/data/whatsappApis.ts` with all 52 APIs from the CSV, each tagged with `accessType` based on classification
+2. Create `src/components/CodeSample.tsx` -- tabbed code viewer with copy support for cURL, Python, Node.js, PHP
+3. Create `src/components/ApiLineItem.tsx` -- expandable row with toggle or "Request Access" button, expands to show CodeSample
+4. Update `src/pages/ProductDetail.tsx` -- for WhatsApp, render the API catalog using ApiLineItem components instead of the generic capabilities layout
+5. Update `src/components/ChannelConfigModal.tsx` and `src/pages/Overview.tsx` -- after saving configuration, navigate to the product page
 
