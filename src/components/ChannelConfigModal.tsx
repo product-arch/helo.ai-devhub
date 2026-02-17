@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,15 +37,17 @@ const channelFields: Record<string, ChannelField[]> = {
 
 interface ChannelConfigModalProps {
   product: Product;
+  appId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (productId: string) => void;
 }
 
-export function ChannelConfigModal({ product, open, onOpenChange, onSave }: ChannelConfigModalProps) {
+export function ChannelConfigModal({ product, appId, open, onOpenChange, onSave }: ChannelConfigModalProps) {
   const fields = channelFields[product.id] || [];
   const [values, setValues] = useState<Record<string, string>>({});
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const requiredFilled = fields.filter((f) => f.required).every((f) => values[f.key]?.trim());
 
@@ -53,6 +56,7 @@ export function ChannelConfigModal({ product, open, onOpenChange, onSave }: Chan
     toast({ title: "Configuration saved", description: `${product.name} has been configured successfully.` });
     setValues({});
     onOpenChange(false);
+    navigate(`/apps/${appId}/products/${product.id}`);
   };
 
   return (

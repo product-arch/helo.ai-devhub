@@ -106,6 +106,7 @@ export default function Overview() {
       {configProduct && (
         <ChannelConfigModal
           product={configProduct}
+          appId={app.id}
           open={!!configProduct}
           onOpenChange={(open) => !open && setConfigProduct(null)}
           onSave={handleChannelSave}

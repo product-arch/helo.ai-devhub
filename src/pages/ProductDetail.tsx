@@ -14,6 +14,8 @@ import {
 import { Check, X, ExternalLink, Copy, Check as CheckIcon } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { whatsappApis } from "@/data/whatsappApis";
+import { ApiLineItem } from "@/components/ApiLineItem";
 
 interface EndpointDef {
   id: string;
@@ -63,25 +65,6 @@ const productConfigs: Record<string, {
       { name: "Agent verification", required: true, completed: false, source: "Google" },
     ],
   },
-  whatsapp: {
-    fields: [
-      { name: "phoneNumberId", label: "Phone Number ID", placeholder: "1234567890", required: true },
-      { name: "accessToken", label: "Access Token", placeholder: "EAAGm...", required: true },
-      { name: "businessAccountId", label: "Business Account ID", placeholder: "9876543210", required: true },
-    ],
-    endpoints: [
-      { id: "wa_send", method: "POST", path: "/v1/whatsapp/send", description: "Send a WhatsApp message", capabilityId: "wa_session" },
-      { id: "wa_template", method: "POST", path: "/v1/whatsapp/template", description: "Send a template message", capabilityId: "wa_template" },
-      { id: "wa_status", method: "GET", path: "/v1/whatsapp/{messageId}", description: "Get message status", capabilityId: "wa_session" },
-      { id: "wa_interactive", method: "POST", path: "/v1/whatsapp/interactive", description: "Send interactive message", capabilityId: "wa_interactive" },
-      { id: "wa_catalog", method: "POST", path: "/v1/whatsapp/catalog", description: "Send catalog message", capabilityId: "wa_catalog" },
-    ],
-    prerequisites: [
-      { name: "Account verification", required: true, completed: true, source: "Internal" },
-      { name: "Meta Business verification", required: true, completed: false, source: "Meta" },
-      { name: "WhatsApp Business API access", required: true, completed: false, source: "Meta" },
-    ],
-  },
   webhooks: {
     fields: [
       { name: "endpointUrl", label: "Endpoint URL", placeholder: "https://api.example.com/webhooks", required: true },
@@ -103,9 +86,44 @@ export default function ProductDetail() {
 
   const app = apps.find((a) => a.id === appId);
   const product = app?.products.find((p) => p.id === productId);
-  const config = productId ? productConfigs[productId] : null;
 
-  if (!app || !product || !config) return <Navigate to={appId ? `/apps/${appId}/products` : "/apps"} replace />;
+  if (!app || !product) return <Navigate to={appId ? `/apps/${appId}/overview` : "/apps"} replace />;
+
+  // WhatsApp gets the API catalog view
+  if (productId === "whatsapp") {
+    return (
+      <DashboardLayout>
+        <PageHeader
+          title="WhatsApp Messaging"
+          breadcrumbs={[
+            { label: "Apps", href: "/apps" },
+            { label: app.name, href: `/apps/${appId}/overview` },
+            { label: "Products", href: `/apps/${appId}/products` },
+            { label: "WhatsApp Messaging" },
+          ]}
+          actions={<StatusBadge status={product.status} />}
+        />
+
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">API Catalog</CardTitle>
+              <span className="text-xs text-muted-foreground">{whatsappApis.length} APIs</span>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {whatsappApis.map((api) => (
+              <ApiLineItem key={api.id} api={api} />
+            ))}
+          </CardContent>
+        </Card>
+      </DashboardLayout>
+    );
+  }
+
+  // Non-WhatsApp: standard product detail view
+  const config = productConfigs[productId!];
+  if (!config) return <Navigate to={`/apps/${appId}/overview`} replace />;
 
   const enabledCapabilityEndpoints = new Set(
     product.capabilities.filter((c) => c.status === "enabled").flatMap((c) => c.linkedEndpoints)
@@ -117,7 +135,10 @@ export default function ProductDetail() {
     .slice(0, 10);
 
   const copyCurl = (endpoint: EndpointDef) => {
-    const curl = `curl -X ${endpoint.method} \\\n  'https://api.helo.ai${endpoint.path}' \\\n  -H 'Authorization: Bearer YOUR_API_KEY' \\\n  -H 'Content-Type: application/json'`;
+    const curl = `curl -X ${endpoint.method} \\
+  'https://api.helo.ai${endpoint.path}' \\
+  -H 'Authorization: Bearer YOUR_API_KEY' \\
+  -H 'Content-Type: application/json'`;
     navigator.clipboard.writeText(curl);
     setCopied(endpoint.path);
     toast({ title: "Copied", description: "cURL command copied to clipboard" });
@@ -147,7 +168,7 @@ export default function ProductDetail() {
         title={product.name}
         breadcrumbs={[
           { label: "Apps", href: "/apps" },
-          { label: app.name },
+          { label: app.name, href: `/apps/${appId}/overview` },
           { label: "Products", href: `/apps/${appId}/products` },
           { label: product.name },
         ]}
@@ -223,7 +244,7 @@ export default function ProductDetail() {
           </CardContent>
         </Card>
 
-        {/* Section C: API Surface (capability-driven) */}
+        {/* Section C: API Surface */}
         {product.status !== "disabled" && (
           <Card>
             <CardHeader><CardTitle className="text-base">API Endpoints</CardTitle></CardHeader>
