@@ -17,7 +17,10 @@ import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Eye, EyeOff, Copy, Check, Save, Zap, Loader2 } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import { Eye, EyeOff, Copy, Check, Save, Zap, Loader2, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -115,6 +118,137 @@ function buildInitialSubscriptions(): Record<string, boolean> {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+// ─── Payload helper ───────────────────────────────────────────────────────────
+
+function getPayloadForEvent(eventId: string): string {
+  const wrap = (field: string, value: object) => ({
+    object: "whatsapp_business_account",
+    entry: [{ id: "WABA_ID", changes: [{ value, field }] }],
+  });
+
+  const payloads: Record<string, object> = {
+    messages: wrap("messages", {
+      messaging_product: "whatsapp",
+      metadata: { display_phone_number: "15550001234", phone_number_id: "PHONE_NUMBER_ID" },
+      contacts: [{ profile: { name: "John Doe" }, wa_id: "15551234567" }],
+      messages: [{ from: "15551234567", id: "wamid.TEST123", timestamp: "1700000000", text: { body: "Hello, world!" }, type: "text" }],
+    }),
+    message_echoes: wrap("message_echoes", {
+      messaging_product: "whatsapp",
+      metadata: { display_phone_number: "15550001234", phone_number_id: "PHONE_NUMBER_ID" },
+      messages: [{ from: "15550001234", id: "wamid.ECHO456", timestamp: "1700000001", text: { body: "Echo from your app" }, type: "text" }],
+    }),
+    message_reactions: wrap("message_reactions", {
+      messaging_product: "whatsapp",
+      metadata: { display_phone_number: "15550001234", phone_number_id: "PHONE_NUMBER_ID" },
+      messages: [{ from: "15551234567", id: "wamid.REACT789", timestamp: "1700000002", reaction: { message_id: "wamid.TEST123", emoji: "👍" }, type: "reaction" }],
+    }),
+    calls: wrap("calls", {
+      messaging_product: "whatsapp",
+      metadata: { display_phone_number: "15550001234", phone_number_id: "PHONE_NUMBER_ID" },
+      calls: [{ from: "15551234567", id: "call.TEST001", timestamp: "1700000003", status: "missed" }],
+    }),
+    account_alerts: wrap("account_alerts", {
+      alert_severity: "WARNING",
+      alert_type: "ACCOUNT_MESSAGING_LIMIT_REACHED",
+      entity_type: "PHONE_NUMBER",
+      entity_id: "PHONE_NUMBER_ID",
+    }),
+    account_review_update: wrap("account_review_update", {
+      decision: "APPROVED",
+      entity_type: "WHATSAPP_BUSINESS_ACCOUNT",
+      entity_id: "WABA_ID",
+    }),
+    account_settings_update: wrap("account_settings_update", {
+      phone_number: "15550001234",
+      event: "ACCOUNT_SETTINGS_UPDATED",
+      ban_info: { waba_ban_state: "NONE", waba_ban_date: "" },
+    }),
+    account_update: wrap("account_update", {
+      phone_number: "15550001234",
+      event: "ACCOUNT_UPDATE",
+      ban_info: { waba_ban_state: "NONE" },
+    }),
+    business_capability_update: wrap("business_capability_update", {
+      max_daily_conversation_per_phone: 1000,
+      max_phone_numbers_per_business: 20,
+    }),
+    business_status_update: wrap("business_status_update", {
+      business_id: "BUSINESS_ID",
+      status: "ACTIVE",
+      previous_status: "PENDING",
+    }),
+    message_template_components_update: wrap("message_template_components_update", {
+      message_template_id: "TEMPLATE_ID",
+      message_template_name: "order_confirmation",
+      message_template_language: "en_US",
+      event: "APPROVED",
+    }),
+    message_template_quality_update: wrap("message_template_quality_update", {
+      message_template_id: "TEMPLATE_ID",
+      message_template_name: "promo_message",
+      message_template_language: "en_US",
+      previous_quality_score: "GREEN",
+      new_quality_score: "YELLOW",
+    }),
+    group_lifecycle_update: wrap("group_lifecycle_update", {
+      group_id: "GROUP_ID",
+      actor: "15551234567",
+      event: "GROUP_CREATED",
+    }),
+    group_participants_update: wrap("group_participants_update", {
+      group_id: "GROUP_ID",
+      actor: "15551234567",
+      event: "MEMBER_ADDED",
+      members: ["15559876543"],
+    }),
+    group_settings_update: wrap("group_settings_update", {
+      group_id: "GROUP_ID",
+      actor: "15551234567",
+      event: "SUBJECT_CHANGED",
+      new_subject: "Team Announcements",
+    }),
+    group_status_update: wrap("group_status_update", {
+      group_id: "GROUP_ID",
+      event: "GROUP_SUSPENDED",
+    }),
+    automatic_events: wrap("automatic_events", {
+      event: "AUTOMATED_RESPONSE_TRIGGERED",
+      phone_number_id: "PHONE_NUMBER_ID",
+      triggered_at: "1700000010",
+    }),
+    flows: wrap("flows", {
+      flow_id: "FLOW_ID",
+      flow_name: "Customer Onboarding",
+      event: "FLOW_COMPLETED",
+      wa_id: "15551234567",
+      timestamp: "1700000005",
+    }),
+    history: wrap("history", {
+      sync_id: "SYNC_ID",
+      event: "HISTORY_SYNC_STARTED",
+      phone_number_id: "PHONE_NUMBER_ID",
+    }),
+    phone_number_name_update: wrap("phone_number_name_update", {
+      phone_number_id: "PHONE_NUMBER_ID",
+      display_name: "My Business",
+      decision: "APPROVED",
+    }),
+    phone_number_quality_update: wrap("phone_number_quality_update", {
+      phone_number: "15550001234",
+      event: "QUALITY_UPDATED",
+      current_limit: "TIER_50K",
+      previous_quality_score: "GREEN",
+      new_quality_score: "RED",
+    }),
+  };
+
+  const payload = payloads[eventId] ?? wrap(eventId, { event: eventId, timestamp: "1700000000" });
+  return JSON.stringify(payload, null, 2);
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function Webhooks() {
   const { appId } = useParams<{ appId: string }>();
   const { apps, setWebhookUrl } = useApp();
@@ -123,7 +257,9 @@ export default function Webhooks() {
   const [showSecret, setShowSecret] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [subscriptions, setSubscriptions] = useState<Record<string, boolean>>(buildInitialSubscriptions);
-  const [testingEvents, setTestingEvents] = useState<Record<string, boolean>>({});
+  const [testModalEvent, setTestModalEvent] = useState<string | null>(null);
+  const [isSendingPayload, setIsSendingPayload] = useState(false);
+  const [payloadCopied, setPayloadCopied] = useState(false);
   const [retryCount, setRetryCount] = useState("5");
   const [retryInterval, setRetryInterval] = useState("30");
   const { toast } = useToast();
@@ -153,14 +289,28 @@ export default function Webhooks() {
   };
 
   const handleTest = (eventId: string) => {
-    setTestingEvents((prev) => ({ ...prev, [eventId]: true }));
+    setTestModalEvent(eventId);
+    setPayloadCopied(false);
+  };
+
+  const handleSendPayload = () => {
+    const eventId = testModalEvent;
+    setTestModalEvent(null);
+    setIsSendingPayload(true);
     setTimeout(() => {
-      setTestingEvents((prev) => ({ ...prev, [eventId]: false }));
+      setIsSendingPayload(false);
       toast({
         title: "Test event sent",
         description: `A test ${eventId} payload was delivered to your endpoint`,
       });
     }, 1500);
+  };
+
+  const handleCopyPayload = () => {
+    if (!testModalEvent) return;
+    navigator.clipboard.writeText(getPayloadForEvent(testModalEvent));
+    setPayloadCopied(true);
+    setTimeout(() => setPayloadCopied(false), 2000);
   };
 
   const getGroupSubscribedCount = (group: WebhookEventGroup) =>
@@ -313,7 +463,6 @@ export default function Webhooks() {
                       <div className="border-t border-border/50">
                         {group.events.map((event, idx) => {
                           const isSubscribed = subscriptions[event.id];
-                          const isTesting = testingEvents[event.id];
                           return (
                             <div
                               key={event.id}
@@ -350,26 +499,18 @@ export default function Webhooks() {
                                 className="shrink-0"
                               />
 
-                              {/* Test button */}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="shrink-0 gap-1.5 text-xs h-8 px-3"
-                                onClick={() => handleTest(event.id)}
-                                disabled={isTesting}
-                              >
-                                {isTesting ? (
-                                  <>
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                    Sending
-                                  </>
-                                ) : (
-                                  <>
-                                    <Zap className="h-3 w-3" />
-                                    Test
-                                  </>
-                                )}
-                              </Button>
+                              {/* Test button — only visible when subscribed */}
+                              {isSubscribed && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="shrink-0 gap-1.5 text-xs h-8 px-3"
+                                  onClick={() => handleTest(event.id)}
+                                >
+                                  <Zap className="h-3 w-3" />
+                                  Test
+                                </Button>
+                              )}
                             </div>
                           );
                         })}
@@ -418,6 +559,51 @@ export default function Webhooks() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ── Test Payload Modal ──────────────────────────────────────────── */}
+      <Dialog open={!!testModalEvent} onOpenChange={(open) => { if (!open) setTestModalEvent(null); }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Test Webhook Event</DialogTitle>
+            <DialogDescription>
+              Payload preview for{" "}
+              <code className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">{testModalEvent}</code>
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Payload code block */}
+          <div className="relative">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="absolute right-2 top-2 h-7 px-2 text-xs z-10"
+              onClick={handleCopyPayload}
+            >
+              {payloadCopied ? (
+                <><Check className="h-3 w-3 mr-1" />Copied</>
+              ) : (
+                <><Copy className="h-3 w-3 mr-1" />Copy</>
+              )}
+            </Button>
+            <pre className="bg-muted rounded-lg p-4 text-xs font-mono overflow-auto max-h-72 leading-relaxed">
+              {testModalEvent ? getPayloadForEvent(testModalEvent) : ""}
+            </pre>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <p className="text-xs text-muted-foreground">
+              This payload will be sent to your configured endpoint
+            </p>
+            <Button onClick={handleSendPayload} disabled={isSendingPayload} className="shrink-0">
+              {isSendingPayload ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending…</>
+              ) : (
+                <><Send className="h-4 w-4 mr-2" />Send Payload</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
