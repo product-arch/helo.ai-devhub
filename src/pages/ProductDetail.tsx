@@ -1,4 +1,4 @@
-import { useParams, Navigate } from "react-router-dom";
+import { useParams, Navigate, useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useApp } from "@/contexts/AppContext";
@@ -65,17 +65,6 @@ const productConfigs: Record<string, {
       { name: "Agent verification", required: true, completed: false, source: "Google" },
     ],
   },
-  webhooks: {
-    fields: [
-      { name: "endpointUrl", label: "Endpoint URL", placeholder: "https://api.example.com/webhooks", required: true },
-      { name: "authHeader", label: "Authorization Header", placeholder: "Bearer token...", required: false },
-    ],
-    endpoints: [],
-    prerequisites: [
-      { name: "Account verification", required: true, completed: true, source: "Internal" },
-      { name: "HTTPS endpoint", required: true, completed: true, source: "Customer" },
-    ],
-  },
 };
 
 export default function ProductDetail() {
@@ -119,6 +108,11 @@ export default function ProductDetail() {
         </Card>
       </DashboardLayout>
     );
+  }
+
+  // Webhooks is a top-level page — redirect to the correct route
+  if (productId === "webhooks") {
+    return <Navigate to={`/apps/${appId}/webhooks`} replace />;
   }
 
   // Non-WhatsApp: standard product detail view
