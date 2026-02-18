@@ -1,202 +1,138 @@
 
-# Webhooks Page Overhaul — Grouped Events with Enable/Disable and Test Actions
+# Test Button — Subscribed-Only + JSON Payload Modal
 
-## What the PDF Shows
+## Summary of Changes
 
-The document is a screenshot of the Meta for Developers WhatsApp Webhooks configuration panel. It reveals the full list of subscribable webhook event fields (from the "Field" column):
+Two targeted changes to `src/pages/Webhooks.tsx`:
 
-**WhatsApp Events extracted from the PDF:**
-- `account_alerts`
-- `account_review_update`
-- `account_settings_update`
-- `account_update`
-- `automatic_events`
-- `business_capability_update`
-- `business_status_update`
-- `calls`
-- `flows`
-- `group_lifecycle_update`
-- `group_participants_update`
-- `group_settings_update`
-- `group_status_update`
-- `history`
-- `message_echoes`
-- `message_template_components_update`
-- `message_template_quality_update`
-- *(plus additional events below the fold, assumed from Meta's documented full list)*: `messages`, `message_reactions`, `phone_number_name_update`, `phone_number_quality_update`
+1. **Hide/show the Test button** based on subscription state — only render it when the event is subscribed
+2. **Replace the current toast-only test handler** with a modal that shows a dummy JSON payload for the selected event, with a "Send Payload" button in the bottom-right corner
+
+No new files are needed — the Dialog component already exists in the project (`src/components/ui/dialog.tsx`).
 
 ---
 
-## What Changes
+## Change 1: Test Button Visibility
 
-The current Webhooks page has a single flat list of 4 generic events. The new design:
+Currently the Test button is always rendered (just disabled while sending). The new behavior:
 
-1. **Replaces the flat event list** with a grouped, channel-organized catalog of all real WhatsApp webhook events from the PDF
-2. **Each event row** has a clear subscribe/unsubscribe toggle and a separate "Test" button
-3. **Events are grouped** into logical categories with a collapsible group header
-4. **Delivery History** table stays intact at the bottom
-
----
-
-## Event Groupings
-
-Events are grouped into 5 logical sections:
-
-### 1. Account & Business
-- `account_alerts` — Account-level alerts and notifications
-- `account_review_update` — Status changes from Meta account reviews
-- `account_settings_update` — Account configuration changes
-- `account_update` — General account-level updates
-- `business_capability_update` — Changes to business-level capabilities
-- `business_status_update` — Business account status changes
-
-### 2. Messaging
-- `messages` — Inbound and outbound message events (core event)
-- `message_echoes` — Copies of messages sent by the app
-- `message_reactions` — Message reaction events from recipients
-- `calls` — Voice call events on WhatsApp
-
-### 3. Message Templates
-- `message_template_components_update` — Template component changes
-- `message_template_quality_update` — Template quality rating changes
-
-### 4. Groups
-- `group_lifecycle_update` — Group created/modified/deleted events
-- `group_participants_update` — Members added/removed from groups
-- `group_settings_update` — Group setting changes
-- `group_status_update` — Group status changes
-
-### 5. Platform & Flows
-- `automatic_events` — System-generated automatic events
-- `flows` — WhatsApp Flows interaction events
-- `history` — Message history sync events
-- `phone_number_name_update` — Business display name changes
-- `phone_number_quality_update` — Phone number quality rating changes
+- If `isSubscribed === false`: the Test button is not rendered at all (no ghost placeholder, no disabled button — it simply disappears)
+- If `isSubscribed === true`: the Test button renders normally as it does today
+- This makes the UI much cleaner for unsubscribed events — the row just shows the name, description, status badge, and toggle
 
 ---
 
-## New Event Row Design
+## Change 2: Payload Modal
 
-Each event is a row within its group section. The row shows:
+Instead of clicking "Test" → 1.5s spinner → toast, the new flow is:
 
-| Column | Content |
-|--------|---------|
-| Event name | `monospace` code chip (e.g. `messages`) |
-| Description | Short plain-text explanation of what fires this event |
-| Status | "Subscribed" green badge or "Unsubscribed" muted badge |
-| Subscribe toggle | Switch component — checked = subscribed |
-| Test button | Small "Test" button — clicking it fires a mock event and shows a success toast |
+1. User clicks **Test** on a subscribed event
+2. A **Dialog modal** opens immediately showing:
+   - **Header**: "Test Webhook Event" with the event name as a `code` chip subtitle
+   - **Body**: A formatted JSON payload block for that specific event type, with a **Copy** button in the top-right of the code block
+   - **Footer**: 
+     - Left: small muted text "This payload will be sent to your configured endpoint"
+     - Right: **"Send Payload"** button (primary) — clicking it closes the modal, runs a 1.5s loading state on the button (in the modal footer area), then fires the success toast
 
-**Row states:**
-- **Subscribed**: Toggle is ON, green "Subscribed" badge, Test button is enabled
-- **Unsubscribed**: Toggle is OFF, muted badge, Test button is still clickable (to test without subscribing, matching Meta's UI pattern)
+### State additions needed:
+
+```
+const [testModalEvent, setTestModalEvent] = useState<string | null>(null);
+const [isSendingPayload, setIsSendingPayload] = useState(false);
+```
+
+- `testModalEvent`: holds the `eventId` of whichever event's modal is open, or `null` when closed
+- `isSendingPayload`: tracks whether the "Send Payload" button is in loading state
+
+The existing `testingEvents` Record state can be removed since it was only used for the spinner on the inline button.
 
 ---
 
-## New Data Structure
+## Dummy JSON Payloads
 
-A new data constant `webhookEventGroups` is defined in `src/pages/Webhooks.tsx` (no separate file needed):
+Each event type gets a realistic but dummy JSON payload. A `getPayloadForEvent(eventId)` helper function maps event IDs to their payloads. Examples:
 
-```text
-WebhookEventField = {
-  id: string              // snake_case event name e.g. "messages"
-  name: string            // display name e.g. "messages"
-  description: string     // one-line description
-  subscribed: boolean     // runtime state — starts pre-seeded for some
-}
-
-WebhookEventGroup = {
-  id: string              // e.g. "messaging"
-  label: string           // e.g. "Messaging"
-  description: string     // e.g. "Inbound and outbound message events"
-  events: WebhookEventField[]
+**`messages`**
+```json
+{
+  "object": "whatsapp_business_account",
+  "entry": [{
+    "id": "WABA_ID",
+    "changes": [{
+      "value": {
+        "messaging_product": "whatsapp",
+        "metadata": { "display_phone_number": "15550001234", "phone_number_id": "PHONE_NUMBER_ID" },
+        "contacts": [{ "profile": { "name": "John Doe" }, "wa_id": "15551234567" }],
+        "messages": [{
+          "from": "15551234567",
+          "id": "wamid.TEST123",
+          "timestamp": "1700000000",
+          "text": { "body": "Hello, world!" },
+          "type": "text"
+        }]
+      },
+      "field": "messages"
+    }]
+  }]
 }
 ```
 
-Pre-seeded subscribed state (matching the PDF): `account_alerts`, `account_update`, `flows`, `message_template_components_update`, `message_template_quality_update` start as subscribed. All others start as unsubscribed.
+**`account_alerts`**
+```json
+{
+  "object": "whatsapp_business_account",
+  "entry": [{
+    "id": "WABA_ID",
+    "changes": [{
+      "value": {
+        "alert_severity": "WARNING",
+        "alert_type": "ACCOUNT_MESSAGING_LIMIT_REACHED",
+        "entity_type": "PHONE_NUMBER",
+        "entity_id": "PHONE_NUMBER_ID"
+      },
+      "field": "account_alerts"
+    }]
+  }]
+}
+```
+
+All other events follow the same outer `{ object, entry[{ id, changes[{ value, field }] }] }` envelope with event-specific `value` contents.
 
 ---
 
-## Updated Page Layout
+## Modal Layout
 
-```text
-┌─────────────────────────────────────────────────────┐
-│ Webhook Configuration (existing — endpoint + secret) │
-└─────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────┐
-│ Webhook Event Subscriptions                          │
-│ "Subscribe to events your endpoint will receive"    │
-│                                                      │
-│ ▼ Account & Business                [3 subscribed]  │
-│   ┌────────────────────────────────────────────┐    │
-│   │ account_alerts  │ desc  │ ● Subscribed │⚡Test│  │
-│   │ [toggle ON]                                │    │
-│   └────────────────────────────────────────────┘    │
-│   ...                                               │
-│                                                      │
-│ ▼ Messaging                         [0 subscribed]  │
-│   ...                                               │
-│                                                      │
-│ ▼ Message Templates                 [2 subscribed]  │
-│   ...                                               │
-│                                                      │
-│ ▼ Groups                            [0 subscribed]  │
-│   ...                                               │
-│                                                      │
-│ ▼ Platform & Flows                  [1 subscribed]  │
-│   ...                                               │
-└─────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────┐
-│ Delivery History (existing table)                    │
-└─────────────────────────────────────────────────────┘
+```
+┌──────────────────────────────────────────────────────────┐
+│ Test Webhook Event                              [X close] │
+│ Payload preview for `messages`                           │
+├──────────────────────────────────────────────────────────┤
+│                                         [Copy]           │
+│ {                                                        │
+│   "object": "whatsapp_business_account",                 │
+│   "entry": [{ ... }]                                     │
+│ }                                                        │
+├──────────────────────────────────────────────────────────┤
+│ This payload will be sent to your endpoint   [Send Payload ▶] │
+└──────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Technical Details
-
-### Files to Modify
+## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/pages/Webhooks.tsx` | Full overhaul: add `webhookEventGroups` data constant, replace the Accordion-based event list with a grouped toggle+test row layout using `useState` for per-event subscription state |
+| `src/pages/Webhooks.tsx` | Add Dialog import, add `testModalEvent` + `isSendingPayload` state, add `getPayloadForEvent()` helper, update `handleTest` to open modal instead of spinner, conditionally render Test button only when subscribed, add Dialog JSX below the event cards |
 
-### State Management
+---
 
-Event subscription state is managed locally in the component with `useState`:
-```text
-const [subscriptions, setSubscriptions] = useState<Record<string, boolean>>(
-  // Initial state built from webhookEventGroups, pre-seeding the "already subscribed" ones
-)
-```
+## Implementation Steps
 
-The "Test" button handler:
-1. Shows a loading state on the button for 1.5 seconds
-2. Fires a `toast` with: "Test event sent", description: "A test `{event.name}` payload was delivered to your endpoint"
-3. No real network call — purely UI feedback
-
-### Component Pattern
-
-Each event row is rendered inline (no separate file needed — the component is simple enough):
-
-```text
-<div className="flex items-center gap-3 px-4 py-3 border-b last:border-0">
-  <code className="font-mono text-xs bg-muted px-2 py-1 rounded">event.name</code>
-  <p className="flex-1 text-sm text-muted-foreground">event.description</p>
-  <StatusBadge />
-  <Switch checked={subscribed} onCheckedChange={toggle} />
-  <Button size="sm" variant="outline" onClick={handleTest}>Test</Button>
-</div>
-```
-
-Group headers use an `Accordion` pattern — each group is collapsible, open by default. The group header shows the group label and a count badge (e.g., "3 subscribed").
-
-### Implementation Sequence
-
-1. Define the full `webhookEventGroups` data structure inside `Webhooks.tsx` with all 21 events across 5 groups, seeded with initial subscription states from the PDF
-2. Replace the existing `eventTypes` constant and the Accordion-based `Event Types` card with the new grouped event subscription UI
-3. Add `useState` for subscriptions (Record of eventId → boolean)
-4. Add `useState` for test loading state (Record of eventId → boolean)
-5. Keep the Webhook Configuration card and Delivery History table unchanged
+1. Add `Dialog`, `DialogContent`, `DialogHeader`, `DialogTitle`, `DialogDescription`, `DialogFooter` to imports from `@/components/ui/dialog`
+2. Remove `testingEvents` state, add `testModalEvent` and `isSendingPayload` state
+3. Add `getPayloadForEvent(eventId: string): string` function that returns a JSON string for each of the 21 events
+4. Change `handleTest(eventId)` to simply call `setTestModalEvent(eventId)` — no more setTimeout/toast at click
+5. Add `handleSendPayload()` that closes modal, waits 1.5s (simulated), shows success toast
+6. In the event row JSX: wrap the Test button in `{isSubscribed && ( ... )}` so it only renders when subscribed
+7. Add the `<Dialog>` component at the bottom of the JSX (outside the card, inside the outer `div`) with the payload preview and Send Payload button
