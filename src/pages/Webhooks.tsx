@@ -480,6 +480,21 @@ export default function Webhooks() {
                                 {event.description}
                               </p>
 
+                              {/* Test button — only visible when subscribed, left of status badge */}
+                              <div className="shrink-0 w-[72px] flex justify-end hidden md:flex">
+                                {isSubscribed && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="gap-1.5 text-xs h-8 px-3"
+                                    onClick={() => handleTest(event.id)}
+                                  >
+                                    <Zap className="h-3 w-3" />
+                                    Test
+                                  </Button>
+                                )}
+                              </div>
+
                               {/* Status badge */}
                               <Badge
                                 variant={isSubscribed ? "default" : "secondary"}
@@ -498,19 +513,6 @@ export default function Webhooks() {
                                 onCheckedChange={(checked) => handleToggle(event.id, checked)}
                                 className="shrink-0"
                               />
-
-                              {/* Test button — only visible when subscribed */}
-                              {isSubscribed && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="shrink-0 gap-1.5 text-xs h-8 px-3"
-                                  onClick={() => handleTest(event.id)}
-                                >
-                                  <Zap className="h-3 w-3" />
-                                  Test
-                                </Button>
-                              )}
                             </div>
                           );
                         })}
