@@ -16,6 +16,7 @@ import {
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Eye, EyeOff, Copy, Check, Save, Zap, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -123,6 +124,8 @@ export default function Webhooks() {
   const [copied, setCopied] = useState<string | null>(null);
   const [subscriptions, setSubscriptions] = useState<Record<string, boolean>>(buildInitialSubscriptions);
   const [testingEvents, setTestingEvents] = useState<Record<string, boolean>>({});
+  const [retryCount, setRetryCount] = useState("5");
+  const [retryInterval, setRetryInterval] = useState("30");
   const { toast } = useToast();
 
   if (!app) return <Navigate to="/apps" replace />;
@@ -218,11 +221,55 @@ export default function Webhooks() {
               </div>
               <p className="text-xs text-muted-foreground">Use this secret to verify webhook signatures</p>
             </div>
-            <div className="pt-2">
-              <h4 className="text-sm font-medium mb-2">Retry Policy</h4>
-              <p className="text-sm text-muted-foreground">
-                Failed deliveries are retried up to 5 times with exponential backoff: 30s, 2m, 10m, 1h, 6h
-              </p>
+            <div className="pt-2 space-y-4 border-t border-border mt-2">
+              <h4 className="text-sm font-medium pt-2">Retry Policy</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="retryCount">Max Retry Attempts</Label>
+                  <Select value={retryCount} onValueChange={setRetryCount}>
+                    <SelectTrigger id="retryCount">
+                      <SelectValue placeholder="Select retry count" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[1, 2, 3, 5, 8, 10].map((n) => (
+                        <SelectItem key={n} value={String(n)}>
+                          {n} {n === 1 ? "retry" : "retries"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Number of times a failed delivery will be retried</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="retryInterval">Initial Retry Interval</Label>
+                  <Select value={retryInterval} onValueChange={setRetryInterval}>
+                    <SelectTrigger id="retryInterval">
+                      <SelectValue placeholder="Select interval" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10 seconds</SelectItem>
+                      <SelectItem value="30">30 seconds</SelectItem>
+                      <SelectItem value="60">1 minute</SelectItem>
+                      <SelectItem value="120">2 minutes</SelectItem>
+                      <SelectItem value="300">5 minutes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Starting delay — each retry doubles the interval (exponential backoff)</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between pt-1">
+                <p className="text-xs text-muted-foreground">
+                  With current settings: retried up to <span className="font-medium text-foreground">{retryCount}×</span> starting at <span className="font-medium text-foreground">{retryInterval}s</span> with exponential backoff
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => toast({ title: "Retry policy saved", description: `Up to ${retryCount} retries, starting at ${retryInterval}s with exponential backoff.` })}
+                >
+                  <Save className="h-3.5 w-3.5 mr-1.5" />
+                  Save
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
