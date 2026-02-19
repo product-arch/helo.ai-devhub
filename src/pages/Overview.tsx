@@ -1,4 +1,4 @@
-import { useParams, Navigate } from "react-router-dom";
+import { useParams, Navigate, useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useApp } from "@/contexts/AppContext";
@@ -8,8 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Copy, Check, Eye, EyeOff, MessageSquare, Smartphone, MessageCircle, Webhook } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { ChannelConfigModal } from "@/components/ChannelConfigModal";
-import type { Product } from "@/contexts/AppContext";
 
 const productIcons: Record<string, React.ReactNode> = {
   sms: <MessageSquare className="h-5 w-5" />,
@@ -20,12 +18,12 @@ const productIcons: Record<string, React.ReactNode> = {
 
 export default function Overview() {
   const { appId } = useParams<{ appId: string }>();
-  const { apps, updateProduct } = useApp();
+  const { apps } = useApp();
   const app = apps.find((a) => a.id === appId);
   const [showSecret, setShowSecret] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [configProduct, setConfigProduct] = useState<Product | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   if (!app) return <Navigate to="/apps" replace />;
 
@@ -37,10 +35,6 @@ export default function Overview() {
   };
 
   const maskedSecret = app.apiKey.slice(0, 10) + "••••••••••••••••••••";
-
-  const handleChannelSave = (productId: string) => {
-    updateProduct(app.id, productId, { status: "configured" });
-  };
 
   return (
     <DashboardLayout>
@@ -83,35 +77,33 @@ export default function Overview() {
       {/* Channel Products */}
       <h2 className="text-lg font-medium mb-4">Channel Products</h2>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {app.products.map((product) => (
-          <Card
-            key={product.id}
-            className="hover:border-foreground/20 transition-colors cursor-pointer"
-            onClick={() => setConfigProduct(product)}
-          >
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
+        {app.products.map((product) => {
+          const isDisabled = product.status === "disabled";
+          return (
+            <Card key={product.id} className="hover:border-foreground/20 transition-colors">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2 mb-3">
                   <div className="p-1.5 rounded bg-muted">{productIcons[product.id]}</div>
                   <h3 className="font-medium text-sm">{product.name}</h3>
                 </div>
-              </div>
-              <StatusBadge status={product.status} />
-              <p className="text-xs text-muted-foreground mt-2">{product.description}</p>
-            </CardContent>
-          </Card>
-        ))}
+                <StatusBadge status={product.status} />
+                <p className="text-xs text-muted-foreground mt-2 mb-4">{product.description}</p>
+                {product.blockingReason && (
+                  <p className="text-xs text-warning mb-3">⚠ {product.blockingReason}</p>
+                )}
+                <Button
+                  size="sm"
+                  variant={isDisabled ? "default" : "outline"}
+                  className="w-full"
+                  onClick={() => navigate(`/apps/${appId}/products/${product.id}`)}
+                >
+                  {isDisabled ? "Setup" : "View Details"}
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
-
-      {configProduct && (
-        <ChannelConfigModal
-          product={configProduct}
-          appId={app.id}
-          open={!!configProduct}
-          onOpenChange={(open) => !open && setConfigProduct(null)}
-          onSave={handleChannelSave}
-        />
-      )}
     </DashboardLayout>
   );
 }
