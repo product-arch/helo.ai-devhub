@@ -1,167 +1,155 @@
 
-# API Catalog Bifurcation: Essential & Advanced Groups
+# Sidebar Theme Toggle Relocation + Users Page
 
-## Overview
+## Summary of Changes
 
-The WhatsApp API Catalog in `src/pages/ProductDetail.tsx` will be split into two clearly labeled sections:
+Three areas of work:
 
-1. **Essential APIs** — always-on, no toggle needed, visually distinguished with an "Always Active" indicator
-2. **Advanced APIs** — toggleable (or Request Access) as today, but grouped under a separate header
-
-The classification logic already exists in `src/data/whatsappApis.ts`:
-- `classification === "MVP"` → **Essential**
-- Everything else (`BSP Required`, `Future Scope`, `Internal Only`) → **Advanced**
+1. **Sidebar cleanup** — Remove the "Dark mode / Light mode" text label from the footer; keep only the icon button. Relocate the theme toggle icon to the top of each page (inside `DashboardLayout`'s top-bar area).
+2. **Add Users nav item** — Add a `Users` entry in the sidebar nav list with a `Users` icon, linking to `/apps/:appId/users`.
+3. **New Users page** — A full page at that route showing a table of app users with roles, plus an "Invite User" modal.
 
 ---
 
-## Visual Design
+## Change 1: Sidebar Footer — Remove Theme Label
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│  API Catalog                                           52 APIs   │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ── Essential APIs ──────────────────────────  12 APIs  ──────  │
-│  Always active · Core capabilities included in all plans         │
-│                                                                  │
-│  GET  Block Users         Phone  /{PHONE_NUMBER_ID}/...  ●Active │
-│  POST Business Profile    Phone  /{PHONE_NUMBER_ID}/...  ●Active │
-│  GET  Number Health       Phone  /{PHONE_NUMBER_ID}/...  ●Active │
-│  POST Send Message        Phone  /{PHONE_NUMBER_ID}/...  ●Active │
-│  ...                                                             │
-│                                                                  │
-│  ── Advanced APIs ───────────────────────────  40 APIs  ──────  │
-│  Opt-in access · Enable per your integration requirements        │
-│                                                                  │
-│  GET  Activities Log      WABA   /{WABA_ID}/activities  [toggle] │
-│  GET  AI Thread Search    Phone  /{PHONE_NUMBER_ID}/... [Request]│
-│  ...                                                             │
-└─────────────────────────────────────────────────────────────────┘
+**File:** `src/components/layout/AppSidebar.tsx`
+
+The footer currently has:
+```
+[ Moon/Sun icon ]  Light mode / Dark mode    ← remove the text label
+[ LogOut icon  ]   Sign out
 ```
 
----
+After the change, the theme button becomes icon-only in the footer (same as the collapsed state already is). The text `{!collapsed && <span>...</span>}` is removed from the theme button only; the Sign Out text label is kept as-is.
 
-## Essential API Row Changes (`ApiLineItem`)
-
-Essential APIs (those with `classification === "MVP"`) need a different control on the right side — instead of a toggle or Request Access button, they show a static **"Always Active"** green indicator chip:
-
-```
-● Always Active
-```
-
-This chip is: `bg-green-500/10 text-green-600 border border-green-500/20 rounded-full px-2.5 py-0.5 text-xs`
-
-Essential rows still expand on click to show the `CodeSample` (since the API is always on, clicking the row can directly reveal the code sample without needing to enable it first).
-
----
-
-## Section Header Component
-
-A lightweight inline section header between the two groups:
-
-```
-┌──────────────────────────────────────────────────────────┐
-│  Essential APIs                                  12 APIs  │
-│  Always active · Core capabilities...                     │
-└──────────────────────────────────────────────────────────┘
-```
-
-Styled as: a `div` with `px-4 py-2.5 bg-muted/40 border-b border-border` containing:
-- Left: bold label + muted subtitle
-- Right: count badge
-
----
-
-## Files to Modify
-
-| File | Changes |
-|---|---|
-| `src/data/whatsappApis.ts` | Add an `isEssential` boolean field (derived from `classification === "MVP"`) to `WhatsAppApi` |
-| `src/components/ApiLineItem.tsx` | Accept an `isEssential` prop; when true: always show expanded code sample, replace control with "Always Active" chip, make the row clickable to toggle the code sample open/closed |
-| `src/pages/ProductDetail.tsx` | In the WhatsApp branch, split `whatsappApis` into `essentialApis` and `advancedApis`, render a section header before each group |
-
----
-
-## Technical Details
-
-### 1. `src/data/whatsappApis.ts`
-
-Add `isEssential: boolean` to the `WhatsAppApi` interface. Derive it during the `.map()`:
-
+**Also add `Users` to navItems:**
 ```ts
-const isEssential = api.classification === "MVP";
-return { ...api, id, accessType, isEssential };
+{ title: "Users", url: `${prefix}/users`, icon: Users },
 ```
+Import `Users` from `lucide-react`. Place it after Settings.
 
-### 2. `src/components/ApiLineItem.tsx`
+---
 
-Add `isEssential?: boolean` to `ApiLineItemProps`.
+## Change 2: Theme Toggle Icon at the Top of the Screen
 
-**Control logic change:**
+**File:** `src/components/layout/DashboardLayout.tsx`
 
-```ts
-// Current
-{api.accessType === "toggle" ? <Switch .../> : <RequestAccessButton />}
-
-// New
-{isEssential ? (
-  <span className="flex items-center gap-1.5 text-xs text-green-600 bg-green-500/10 border border-green-500/20 rounded-full px-2.5 py-0.5">
-    <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-    Always Active
-  </span>
-) : api.accessType === "toggle" ? (
-  <Switch checked={enabled} onCheckedChange={handleToggle} />
-) : (
-  <RequestAccessButton />
-)}
-```
-
-**Expand logic change for Essential rows:**
-
-Essential rows should be expandable by clicking (since they're always "on"), so:
-- Add a local `isOpen` state separate from `enabled`
-- For essential: `isOpen` toggled on row click, chevron always visible
-- For advanced: keep existing `isExpanded = enabled` logic
-
-### 3. `src/pages/ProductDetail.tsx`
-
-In the WhatsApp branch:
-
-```ts
-const essentialApis = whatsappApis.filter(a => a.isEssential);
-const advancedApis = whatsappApis.filter(a => !a.isEssential);
-```
-
-Replace the flat render loop with:
+Add a thin top-right floating icon button that is always visible over the main content area. The button sits `absolute top-4 right-6` inside the `<main>` wrapper:
 
 ```tsx
-<CardContent className="p-0">
-  {/* Essential section header */}
-  <div className="px-4 py-2.5 bg-muted/40 border-b flex items-center justify-between">
-    <div>
-      <p className="text-xs font-semibold text-foreground">Essential APIs</p>
-      <p className="text-[11px] text-muted-foreground">Always active · Core capabilities included in all plans</p>
-    </div>
-    <span className="text-[11px] text-muted-foreground">{essentialApis.length} APIs</span>
+<main className="ml-60 min-h-screen p-8 transition-all duration-200 relative">
+  {/* Theme toggle — top right */}
+  <div className="absolute top-4 right-6">
+    <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-8 w-8">
+      {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+    </Button>
   </div>
-  {essentialApis.map(api => <ApiLineItem key={api.id} api={api} isEssential />)}
-
-  {/* Advanced section header */}
-  <div className="px-4 py-2.5 bg-muted/40 border-b border-t flex items-center justify-between">
-    <div>
-      <p className="text-xs font-semibold text-foreground">Advanced APIs</p>
-      <p className="text-[11px] text-muted-foreground">Opt-in access · Enable per your integration requirements</p>
-    </div>
-    <span className="text-[11px] text-muted-foreground">{advancedApis.length} APIs</span>
-  </div>
-  {advancedApis.map(api => <ApiLineItem key={api.id} api={api} />)}
-</CardContent>
+  {children}
+</main>
 ```
+
+`DashboardLayout` will import `useTheme`, `Button`, `Sun`, `Moon`.
+
+---
+
+## Change 3: Register `/apps/:appId/users` Route
+
+**File:** `src/App.tsx`
+
+Add:
+```tsx
+import Users from "./pages/Users";
+...
+<Route path="/apps/:appId/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
+```
+
+---
+
+## Change 4: New `Users` Page
+
+**File:** `src/pages/Users.tsx` (new)
+
+### Layout
+
+```
+┌────────────────────────────────────────────────────────────┐
+│  Users                                   [ + Invite User ] │
+│  Manage who has access to this app                         │
+├────────────────────────────────────────────────────────────┤
+│  Name              Email                  Role    Joined    │
+│  ─────────────────────────────────────────────────────      │
+│  👑 Soumik Choudhury  soumik@helo.ai      Admin   —         │
+│  (future invited users show here)                           │
+└────────────────────────────────────────────────────────────┘
+```
+
+### Role Display
+
+| Role | Icon | Color |
+|---|---|---|
+| Admin | `ShieldCheck` | Amber/orange badge |
+| Developer | `Code2` | Blue badge |
+
+### Default User
+
+One hardcoded mock row pre-seeded in local state:
+```ts
+{ id: "1", name: "Soumik Choudhury", email: "soumik@helo.ai", role: "admin", joinedAt: null }
+```
+
+### "Invite User" Modal
+
+Clicking **+ Invite User** opens a `Dialog` with:
+- Email input (`type="email"`, required)
+- Role `Select` dropdown: Admin / Developer
+- **Send Invite** button — adds the user to the local list with a `pending` status indicator
+
+After submitting, a `toast` fires: *"Invite sent — An invitation has been sent to [email]."*
+
+The new row appears in the table immediately with a "Pending" badge next to their email (since they haven't accepted yet). Once accepted (simulated — no actual email), the status would change.
+
+### Table columns
+
+| Column | Content |
+|---|---|
+| Name | Full name (or `—` if pending) |
+| Email | Email address + optional "Pending" badge |
+| Role | Icon + role label badge |
+| Status | "Active" green chip / "Pending" amber chip |
+| Actions | Kebab menu or remove button (future-proofed) |
+
+### State model (local, no backend)
+
+```ts
+type AppRole = "admin" | "developer";
+type UserStatus = "active" | "pending";
+
+interface AppUser {
+  id: string;
+  name: string | null;
+  email: string;
+  role: AppRole;
+  status: UserStatus;
+}
+```
+
+---
+
+## Files to Create / Modify
+
+| File | Action |
+|---|---|
+| `src/components/layout/AppSidebar.tsx` | Add Users nav item, remove theme text label |
+| `src/components/layout/DashboardLayout.tsx` | Add top-right theme toggle icon |
+| `src/App.tsx` | Register `/apps/:appId/users` route |
+| `src/pages/Users.tsx` | Create new Users page |
 
 ---
 
 ## Implementation Order
 
-1. Update `WhatsAppApi` interface + derivation in `whatsappApis.ts`
-2. Update `ApiLineItem.tsx` — add `isEssential` prop, separate expand state, new control chip
-3. Update `ProductDetail.tsx` — split lists, add section headers
+1. Update `AppSidebar.tsx` — add `Users` nav item + remove theme label text
+2. Update `DashboardLayout.tsx` — add top-right theme icon button
+3. Update `App.tsx` — register new route
+4. Create `src/pages/Users.tsx` — full Users page with table + invite modal
