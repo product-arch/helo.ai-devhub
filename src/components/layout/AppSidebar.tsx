@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Box, Key, Webhook, ScrollText, Settings,
-  Moon, Sun, LogOut, ChevronLeft, ChevronRight, ArrowLeft,
+  Moon, Sun, LogOut, ChevronLeft, ChevronRight, ArrowLeft, Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,7 @@ export function AppSidebar() {
     { title: "Webhooks", url: `${prefix}/webhooks`, icon: Webhook },
     { title: "Logs & Events", url: `${prefix}/logs`, icon: ScrollText },
     { title: "Settings", url: `${prefix}/settings`, icon: Settings },
+    { title: "Users", url: `${prefix}/users`, icon: Users },
   ];
 
   const envColors: Record<string, string> = {
@@ -83,9 +84,8 @@ export function AppSidebar() {
 
       {/* Footer */}
       <div className="p-2 border-t border-sidebar-border space-y-1">
-        <Button variant="ghost" size="sm" onClick={toggleTheme} className={cn("w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent", collapsed && "justify-center px-2")}>
+        <Button variant="ghost" size="icon" onClick={toggleTheme} className={cn("h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent", !collapsed && "self-start ml-1")}>
           {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          {!collapsed && <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>}
         </Button>
         <Button variant="ghost" size="sm" onClick={logout} className={cn("w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent", collapsed && "justify-center px-2")}>
           <LogOut className="h-4 w-4" />
