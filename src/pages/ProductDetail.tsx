@@ -80,6 +80,9 @@ export default function ProductDetail() {
 
   // WhatsApp gets the API catalog view
   if (productId === "whatsapp") {
+    const essentialApis = whatsappApis.filter((a) => a.isEssential);
+    const advancedApis = whatsappApis.filter((a) => !a.isEssential);
+
     return (
       <DashboardLayout>
         <PageHeader
@@ -101,7 +104,27 @@ export default function ProductDetail() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            {whatsappApis.map((api) => (
+            {/* Essential section header */}
+            <div className="px-4 py-2.5 bg-muted/40 border-b border-border flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-foreground">Essential APIs</p>
+                <p className="text-[11px] text-muted-foreground">Always active · Core capabilities included in all plans</p>
+              </div>
+              <span className="text-[11px] text-muted-foreground">{essentialApis.length} APIs</span>
+            </div>
+            {essentialApis.map((api) => (
+              <ApiLineItem key={api.id} api={api} isEssential />
+            ))}
+
+            {/* Advanced section header */}
+            <div className="px-4 py-2.5 bg-muted/40 border-b border-t border-border flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-foreground">Advanced APIs</p>
+                <p className="text-[11px] text-muted-foreground">Opt-in access · Enable per your integration requirements</p>
+              </div>
+              <span className="text-[11px] text-muted-foreground">{advancedApis.length} APIs</span>
+            </div>
+            {advancedApis.map((api) => (
               <ApiLineItem key={api.id} api={api} />
             ))}
           </CardContent>
