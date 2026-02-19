@@ -1,121 +1,119 @@
 
-# Test Button — Subscribed-Only + JSON Payload Modal
+# Logs & Events Page Overhaul
 
-## Summary of Changes
+## Overview
 
-Two targeted changes to `src/pages/Webhooks.tsx`:
+Three improvements to `src/pages/Logs.tsx` and `src/contexts/AppContext.tsx`:
 
-1. **Hide/show the Test button** based on subscription state — only render it when the event is subscribed
-2. **Replace the current toast-only test handler** with a modal that shows a dummy JSON payload for the selected event, with a "Send Payload" button in the bottom-right corner
-
-No new files are needed — the Dialog component already exists in the project (`src/components/ui/dialog.tsx`).
-
----
-
-## Change 1: Test Button Visibility
-
-Currently the Test button is always rendered (just disabled while sending). The new behavior:
-
-- If `isSubscribed === false`: the Test button is not rendered at all (no ghost placeholder, no disabled button — it simply disappears)
-- If `isSubscribed === true`: the Test button renders normally as it does today
-- This makes the UI much cleaner for unsubscribed events — the row just shows the name, description, status badge, and toggle
+1. **Proper Event Type naming** — replace raw codes like `message.sent` with structured Group + Event Name display
+2. **Split Event Type column** into two sub-columns: **Event Group** and **Event Name**
+3. **More status chips** — add `retried`, `queued`, and `rate_limited` statuses to `StatusBadge` and mock data
+4. **Product Health & Latency summary cards** — a block of metric cards at the top of the Logs page showing per-product health and p95 latency
 
 ---
 
-## Change 2: Payload Modal
+## Change 1: Event Type — Proper Names & Bifurcated Columns
 
-Instead of clicking "Test" → 1.5s spinner → toast, the new flow is:
+### Current state
+- Raw `eventType` values from mock data: `message.sent`, `message.delivered`, `message.failed`, `webhook.triggered`, `config.updated`
+- Displayed as a single `<code>` chip in one column
 
-1. User clicks **Test** on a subscribed event
-2. A **Dialog modal** opens immediately showing:
-   - **Header**: "Test Webhook Event" with the event name as a `code` chip subtitle
-   - **Body**: A formatted JSON payload block for that specific event type, with a **Copy** button in the top-right of the code block
-   - **Footer**: 
-     - Left: small muted text "This payload will be sent to your configured endpoint"
-     - Right: **"Send Payload"** button (primary) — clicking it closes the modal, runs a 1.5s loading state on the button (in the modal footer area), then fires the success toast
+### New design (based on user's reference image)
 
-### State additions needed:
+The "Event Type" column becomes two separate columns:
 
+| Event Group | Event Name |
+|---|---|
+| Message | Sent |
+| Message | Delivered |
+| Message | Failed |
+| Webhook | Triggered |
+| Configuration | Updated |
+
+**Parsing logic**: A helper `parseEventType(eventType: string)` splits on `.` and maps each part to a proper display name:
+
+```text
+"message.sent"       → group: "Message",       name: "Sent"
+"message.delivered"  → group: "Message",       name: "Delivered"  
+"message.failed"     → group: "Message",       name: "Failed"
+"webhook.triggered"  → group: "Webhook",       name: "Triggered"
+"config.updated"     → group: "Configuration", name: "Updated"
 ```
-const [testModalEvent, setTestModalEvent] = useState<string | null>(null);
-const [isSendingPayload, setIsSendingPayload] = useState(false);
-```
 
-- `testModalEvent`: holds the `eventId` of whichever event's modal is open, or `null` when closed
-- `isSendingPayload`: tracks whether the "Send Payload" button is in loading state
+The group uses a `capitalize`/label map, and the name is capitalized. Both render as styled chips — the group as a muted secondary chip and the name as a distinct primary code chip.
 
-The existing `testingEvents` Record state can be removed since it was only used for the spinner on the inline button.
+### Column layout change
+
+The table goes from 5 columns to 6:
+
+| Timestamp | Product | Event Group | Event Name | Status | Message |
 
 ---
 
-## Dummy JSON Payloads
+## Change 2: Additional Status Chips
 
-Each event type gets a realistic but dummy JSON payload. A `getPayloadForEvent(eventId)` helper function maps event IDs to their payloads. Examples:
+### New statuses to add
 
-**`messages`**
-```json
-{
-  "object": "whatsapp_business_account",
-  "entry": [{
-    "id": "WABA_ID",
-    "changes": [{
-      "value": {
-        "messaging_product": "whatsapp",
-        "metadata": { "display_phone_number": "15550001234", "phone_number_id": "PHONE_NUMBER_ID" },
-        "contacts": [{ "profile": { "name": "John Doe" }, "wa_id": "15551234567" }],
-        "messages": [{
-          "from": "15551234567",
-          "id": "wamid.TEST123",
-          "timestamp": "1700000000",
-          "text": { "body": "Hello, world!" },
-          "type": "text"
-        }]
-      },
-      "field": "messages"
-    }]
-  }]
-}
-```
+| Status key | Label | Color style |
+|---|---|---|
+| `retried` | Retried | Blue/info — `bg-blue-500/10 text-blue-600 border-blue-500/20` |
+| `queued` | Queued | Purple — `bg-purple-500/10 text-purple-600 border-purple-500/20` |
+| `rate_limited` | Rate Limited | Orange/amber — `bg-orange-500/10 text-orange-600 border-orange-500/20` |
 
-**`account_alerts`**
-```json
-{
-  "object": "whatsapp_business_account",
-  "entry": [{
-    "id": "WABA_ID",
-    "changes": [{
-      "value": {
-        "alert_severity": "WARNING",
-        "alert_type": "ACCOUNT_MESSAGING_LIMIT_REACHED",
-        "entity_type": "PHONE_NUMBER",
-        "entity_id": "PHONE_NUMBER_ID"
-      },
-      "field": "account_alerts"
-    }]
-  }]
-}
-```
-
-All other events follow the same outer `{ object, entry[{ id, changes[{ value, field }] }] }` envelope with event-specific `value` contents.
+### Files to update
+- `src/components/StatusBadge.tsx` — extend `statusConfig` and `dotColor` with the 3 new statuses, and widen the type union
+- `src/contexts/AppContext.tsx` — update `LogEvent.status` type to include the new statuses, and seed a few of them into `generateMockLogEvents()`
 
 ---
 
-## Modal Layout
+## Change 3: Product Health & Latency Cards
 
+### New card block above the filter bar
+
+A row of metric summary cards — one per configured product — showing:
+
+```text
+┌────────────────────┐  ┌────────────────────┐  ┌────────────────────┐  ┌────────────────────┐
+│ 🟢 SMS Messaging   │  │ 🟡 RCS Messaging   │  │ 🔴 WhatsApp        │  │ 🟢 Webhooks        │
+│ Active             │  │ Configured         │  │ Restricted         │  │ Active             │
+│ p95 Latency        │  │ p95 Latency        │  │ p95 Latency        │  │ p95 Latency        │
+│ 142ms              │  │ 287ms              │  │ N/A                │  │ 58ms               │
+│ Success rate       │  │ Success rate       │  │ —                  │  │ Success rate       │
+│ 98.4%              │  │ 95.1%              │  │                    │  │ 99.8%              │
+└────────────────────┘  └────────────────────┘  └────────────────────┘  └────────────────────┘
 ```
-┌──────────────────────────────────────────────────────────┐
-│ Test Webhook Event                              [X close] │
-│ Payload preview for `messages`                           │
-├──────────────────────────────────────────────────────────┤
-│                                         [Copy]           │
-│ {                                                        │
-│   "object": "whatsapp_business_account",                 │
-│   "entry": [{ ... }]                                     │
-│ }                                                        │
-├──────────────────────────────────────────────────────────┤
-│ This payload will be sent to your endpoint   [Send Payload ▶] │
-└──────────────────────────────────────────────────────────┘
+
+Each card shows:
+- **Product name** with product icon
+- **Status badge** (existing `StatusBadge` component)
+- **p95 Latency** — computed from the app's `logEvents` filtered to that product (mock: just a seeded constant per product since we don't have real timing data)
+- **Success rate** — computed from `logEvents` for that product: `(success count / total count) * 100`
+
+The latency values are seeded as a static map per product since mock log events don't carry timing data:
+```text
+SMS: 142ms, RCS: 287ms, WhatsApp: N/A (restricted), Webhooks: 58ms
 ```
+
+Success rate is **computed live** from `app.logEvents` grouped by product.
+
+### Visual design
+- 4 cards in a horizontal grid (`grid-cols-2 md:grid-cols-4`)
+- Each card: `rounded-lg border bg-card p-4`
+- A colored left border accent matching the product status (green=active, yellow=configured/restricted, gray=disabled)
+- Latency in large bold number, "ms" in smaller muted text
+- Success rate with a subtle progress-bar indicator
+
+---
+
+## Filter Bar Enhancement
+
+The "All Event Types" dropdown (currently showing raw codes) becomes "All Event Groups" with clean labels:
+- All Event Groups
+- Message
+- Webhook  
+- Configuration
+
+A second filter for "All Event Names" can be added or the existing dropdown can be repurposed to filter by group cleanly.
 
 ---
 
@@ -123,16 +121,64 @@ All other events follow the same outer `{ object, entry[{ id, changes[{ value, f
 
 | File | Changes |
 |------|---------|
-| `src/pages/Webhooks.tsx` | Add Dialog import, add `testModalEvent` + `isSendingPayload` state, add `getPayloadForEvent()` helper, update `handleTest` to open modal instead of spinner, conditionally render Test button only when subscribed, add Dialog JSX below the event cards |
+| `src/contexts/AppContext.tsx` | Extend `LogEvent.status` type with `"retried" \| "queued" \| "rate_limited"`, seed a few of each in `generateMockLogEvents()` |
+| `src/components/StatusBadge.tsx` | Add 3 new status configs + dot colors, widen the `StatusBadgeProps` type |
+| `src/pages/Logs.tsx` | Add `parseEventType()` helper, split table into 6 columns (Event Group + Event Name), add health cards above the filter bar, update filter dropdown to use clean group labels |
 
 ---
 
-## Implementation Steps
+## Technical Details
 
-1. Add `Dialog`, `DialogContent`, `DialogHeader`, `DialogTitle`, `DialogDescription`, `DialogFooter` to imports from `@/components/ui/dialog`
-2. Remove `testingEvents` state, add `testModalEvent` and `isSendingPayload` state
-3. Add `getPayloadForEvent(eventId: string): string` function that returns a JSON string for each of the 21 events
-4. Change `handleTest(eventId)` to simply call `setTestModalEvent(eventId)` — no more setTimeout/toast at click
-5. Add `handleSendPayload()` that closes modal, waits 1.5s (simulated), shows success toast
-6. In the event row JSX: wrap the Test button in `{isSubscribed && ( ... )}` so it only renders when subscribed
-7. Add the `<Dialog>` component at the bottom of the JSX (outside the card, inside the outer `div`) with the payload preview and Send Payload button
+### parseEventType helper
+
+```text
+const GROUP_LABELS: Record<string, string> = {
+  message: "Message",
+  webhook: "Webhook",
+  config: "Configuration",
+};
+
+const NAME_LABELS: Record<string, string> = {
+  sent: "Sent",
+  delivered: "Delivered",
+  failed: "Failed",
+  triggered: "Triggered",
+  updated: "Updated",
+};
+
+function parseEventType(eventType: string): { group: string; name: string } {
+  const [groupKey, nameKey] = eventType.split(".");
+  return {
+    group: GROUP_LABELS[groupKey] || capitalize(groupKey),
+    name: NAME_LABELS[nameKey] || capitalize(nameKey ?? ""),
+  };
+}
+```
+
+### Product latency seed map
+
+```text
+const PRODUCT_LATENCY: Record<string, string> = {
+  SMS: "142ms",
+  RCS: "287ms",
+  WhatsApp: "N/A",
+  Webhooks: "58ms",
+};
+```
+
+### Success rate computation
+
+```text
+const productSuccessRate = (productName: string) => {
+  const events = app.logEvents.filter(e => e.product === productName);
+  if (!events.length) return null;
+  const successes = events.filter(e => e.status === "success").length;
+  return ((successes / events.length) * 100).toFixed(1);
+};
+```
+
+### Implementation order
+
+1. Extend types and seed data in `AppContext.tsx`
+2. Add new statuses to `StatusBadge.tsx`
+3. Update `Logs.tsx`: add health cards → update filter logic → split Event Type column → update sheet detail view to also show the separated event group/name
