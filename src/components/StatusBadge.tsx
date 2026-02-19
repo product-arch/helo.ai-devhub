@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { ProductStatus, CapabilityStatus } from "@/contexts/AppContext";
 
 interface StatusBadgeProps {
-  status: ProductStatus | CapabilityStatus | "success" | "failed" | "pending";
+  status: ProductStatus | CapabilityStatus | "success" | "failed" | "pending" | "retried" | "queued" | "rate_limited";
   className?: string;
 }
 
@@ -15,12 +15,16 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   pending: { label: "Pending", className: "bg-warning/10 text-warning border-warning/20" },
   success: { label: "Success", className: "bg-success/10 text-success border-success/20" },
   failed: { label: "Failed", className: "bg-destructive/10 text-destructive border-destructive/20" },
+  retried: { label: "Retried", className: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
+  queued: { label: "Queued", className: "bg-purple-500/10 text-purple-600 border-purple-500/20" },
+  rate_limited: { label: "Rate Limited", className: "bg-orange-500/10 text-orange-600 border-orange-500/20" },
 };
 
 const dotColor: Record<string, string> = {
   active: "bg-success", configured: "bg-primary", disabled: "bg-muted-foreground",
   restricted: "bg-warning", enabled: "bg-success", pending: "bg-warning",
   success: "bg-success", failed: "bg-destructive",
+  retried: "bg-blue-500", queued: "bg-purple-500", rate_limited: "bg-orange-500",
 };
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
