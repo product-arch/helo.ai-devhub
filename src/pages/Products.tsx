@@ -36,9 +36,9 @@ export default function Products() {
                     </div>
                     <p className="text-sm text-muted-foreground mb-4">{product.description}</p>
                     {product.blockingReason && <p className="text-xs text-warning mb-3">⚠ {product.blockingReason}</p>}
-                    <Button variant="outline" size="sm" asChild>
+                    <Button variant={product.status === "disabled" ? "default" : "outline"} size="sm" asChild>
                       <Link to={`/apps/${appId}/products/${product.id}`}>
-                        {product.status === "disabled" ? "Enable" : product.status === "configured" ? "Configure" : "View Details"}
+                        {product.status === "disabled" ? "Setup" : "View Details"}
                       </Link>
                     </Button>
                   </div>
