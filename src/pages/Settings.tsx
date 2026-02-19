@@ -77,7 +77,7 @@ function SectionCard({
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <CardTitle className="text-sm font-semibold tracking-tight">{title}</CardTitle>
+            <CardTitle className="text-base font-semibold tracking-tight">{title}</CardTitle>
             {description && <CardDescription className="mt-0.5 text-xs">{description}</CardDescription>}
           </div>
           {badge}
@@ -281,34 +281,9 @@ export default function Settings() {
         breadcrumbs={[{ label: "Apps", href: "/apps" }, { label: app.name }, { label: "Settings" }]}
       />
 
-      <div className="flex gap-8 items-start mt-2">
-        {/* ── Left nav ─────────────────────────────────────────────────── */}
-        <nav className="w-44 shrink-0 sticky top-8 self-start">
-          <ul className="space-y-0.5">
-            {NAV_ITEMS.map((item) => (
-              <li key={item.id}>
-                <button
-                  onClick={() => scrollTo(item.id)}
-                  className={cn(
-                    "w-full text-left px-3 py-2 text-xs rounded-md transition-colors duration-100 border-l-2",
-                    activeSection === item.id
-                      ? item.danger
-                        ? "bg-destructive/8 text-destructive border-destructive font-medium"
-                        : "bg-muted text-foreground border-primary font-medium"
-                      : item.danger
-                      ? "text-destructive/70 border-transparent hover:text-destructive hover:bg-destructive/5"
-                      : "text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/60"
-                  )}
-                >
-                  {item.label}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
+      <div className="mt-2">
         {/* ── Main content ──────────────────────────────────────────────── */}
-        <div ref={contentRef} className="flex-1 min-w-0">
+        <div ref={contentRef} className="min-w-0">
 
           {/* 1 · General ─────────────────────────────────────────────── */}
           <SectionCard
