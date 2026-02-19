@@ -14,6 +14,7 @@ import Credentials from "./pages/Credentials";
 import Webhooks from "./pages/Webhooks";
 import Logs from "./pages/Logs";
 import Settings from "./pages/Settings";
+import Users from "./pages/Users";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ function AppRoutes() {
       <Route path="/apps/:appId/webhooks" element={<ProtectedRoute><Webhooks /></ProtectedRoute>} />
       <Route path="/apps/:appId/logs" element={<ProtectedRoute><Logs /></ProtectedRoute>} />
       <Route path="/apps/:appId/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      <Route path="/apps/:appId/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
