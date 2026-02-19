@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
-import { Eye, EyeOff, Copy, Check, Save, Zap, Loader2, Send, FlaskConical, XCircle, Lock, CheckCircle2, X } from "lucide-react";
+import { Eye, EyeOff, Copy, Check, Save, Zap, Loader2, Send, FlaskConical, XCircle, CheckCircle2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -294,13 +294,6 @@ export default function Webhooks() {
     if (el) (window as any).__webhookUrlInput = el;
   };
 
-  const focusUrlInput = () => {
-    const el = (window as any).__webhookUrlInput as HTMLInputElement | null;
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-      setTimeout(() => el.focus(), 350);
-    }
-  };
 
   if (!app) return <Navigate to="/apps" replace />;
 
@@ -534,30 +527,11 @@ export default function Webhooks() {
             </Badge>
           </CardHeader>
           <CardContent className="p-0">
-            {!endpointVerified ? (
-              /* ── Lock gate ── */
-              <div className="flex flex-col items-center justify-center gap-4 py-14 px-6 text-center border-t border-border/50">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                  <Lock className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium">Test your endpoint first</p>
-                  <p className="text-xs text-muted-foreground max-w-xs">
-                    Verify your endpoint URL above before configuring event subscriptions.
-                  </p>
-                </div>
-                <Button variant="outline" size="sm" onClick={focusUrlInput} className="gap-2">
-                  <FlaskConical className="h-3.5 w-3.5" />
-                  Test Endpoint
-                </Button>
-              </div>
-            ) : (
-              /* ── Accordion (verified) ── */
-              <Accordion
-                type="multiple"
-                defaultValue={webhookEventGroups.map((g) => g.id)}
-                className="w-full"
-              >
+            <Accordion
+              type="multiple"
+              defaultValue={webhookEventGroups.map((g) => g.id)}
+              className="w-full"
+            >
                 {webhookEventGroups.map((group) => {
                   const subscribedCount = getGroupSubscribedCount(group);
                   return (
@@ -639,7 +613,6 @@ export default function Webhooks() {
                   );
                 })}
               </Accordion>
-            )}
           </CardContent>
         </Card>
 
