@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
-import { Eye, EyeOff, Copy, Check, Save, Zap, Loader2, Send } from "lucide-react";
+import { Eye, EyeOff, Copy, Check, Save, Zap, Loader2, Send, FlaskConical, XCircle, Lock, CheckCircle2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -264,6 +264,44 @@ export default function Webhooks() {
   const [retryInterval, setRetryInterval] = useState("30");
   const { toast } = useToast();
 
+  // ── Endpoint test state ───────────────────────────────────────────────────
+  const [isTestingUrl, setIsTestingUrl] = useState(false);
+  const [urlTestStatus, setUrlTestStatus] = useState<"idle" | "success" | "failed">("idle");
+  const [urlTestLatency, setUrlTestLatency] = useState<number | null>(null);
+
+  const endpointVerified = urlTestStatus === "success";
+
+  const handleTestUrl = () => {
+    if (!url || isTestingUrl) return;
+    setIsTestingUrl(true);
+    setUrlTestStatus("idle");
+    setUrlTestLatency(null);
+    const latency = Math.floor(Math.random() * (300 - 80 + 1)) + 80;
+    setTimeout(() => {
+      const success = Math.random() < 0.8;
+      setIsTestingUrl(false);
+      if (success) {
+        setUrlTestStatus("success");
+        setUrlTestLatency(latency);
+      } else {
+        setUrlTestStatus("failed");
+        setUrlTestLatency(null);
+      }
+    }, 1800);
+  };
+
+  const urlInputRef = (el: HTMLInputElement | null) => {
+    if (el) (window as any).__webhookUrlInput = el;
+  };
+
+  const focusUrlInput = () => {
+    const el = (window as any).__webhookUrlInput as HTMLInputElement | null;
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setTimeout(() => el.focus(), 350);
+    }
+  };
+
   if (!app) return <Navigate to="/apps" replace />;
 
   const copyToClipboard = (text: string, label: string) => {
@@ -342,16 +380,76 @@ export default function Webhooks() {
               <div className="flex gap-2">
                 <Input
                   id="endpoint"
+                  ref={urlInputRef}
                   type="url"
                   value={url}
-                  onChange={(e) => setUrl(e.target.value)}
+                  onChange={(e) => {
+                    setUrl(e.target.value);
+                    setUrlTestStatus("idle");
+                    setUrlTestLatency(null);
+                  }}
                   placeholder="https://api.example.com/webhooks/helo"
                   className="font-mono text-sm"
                 />
+                {/* Test Endpoint button */}
+                <Button
+                  variant="outline"
+                  onClick={handleTestUrl}
+                  disabled={!url || isTestingUrl}
+                  className={
+                    urlTestStatus === "success"
+                      ? "border-success text-success hover:bg-success/10 hover:text-success"
+                      : urlTestStatus === "failed"
+                      ? "border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      : ""
+                  }
+                >
+                  {isTestingUrl ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Testing…</>
+                  ) : urlTestStatus === "success" ? (
+                    <><CheckCircle2 className="h-4 w-4 mr-2" />Endpoint Verified</>
+                  ) : urlTestStatus === "failed" ? (
+                    <><XCircle className="h-4 w-4 mr-2" />Test Failed</>
+                  ) : (
+                    <><FlaskConical className="h-4 w-4 mr-2" />Test Endpoint</>
+                  )}
+                </Button>
                 <Button onClick={handleSave}>
                   <Save className="h-4 w-4 mr-2" />Save
                 </Button>
               </div>
+
+              {/* Result strip */}
+              {urlTestStatus !== "idle" && (
+                <div
+                  className={`flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm ${
+                    urlTestStatus === "success"
+                      ? "bg-success/10 border-success/30 text-success"
+                      : "bg-destructive/10 border-destructive/30 text-destructive"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {urlTestStatus === "success" ? (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 shrink-0" />
+                        <span>Endpoint responded with HTTP 200 in {urlTestLatency}ms</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-4 w-4 shrink-0" />
+                        <span>No response received — check your URL and try again</span>
+                      </>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => { setUrlTestStatus("idle"); setUrlTestLatency(null); }}
+                    className="shrink-0 opacity-70 hover:opacity-100 transition-opacity"
+                    aria-label="Dismiss"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Shared Secret</Label>
@@ -436,92 +534,112 @@ export default function Webhooks() {
             </Badge>
           </CardHeader>
           <CardContent className="p-0">
-            <Accordion
-              type="multiple"
-              defaultValue={webhookEventGroups.map((g) => g.id)}
-              className="w-full"
-            >
-              {webhookEventGroups.map((group) => {
-                const subscribedCount = getGroupSubscribedCount(group);
-                return (
-                  <AccordionItem key={group.id} value={group.id} className="border-b last:border-0">
-                    <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/40 transition-colors">
-                      <div className="flex items-center justify-between w-full pr-2 gap-4">
-                        <div className="text-left">
-                          <p className="font-medium text-sm">{group.label}</p>
-                          <p className="text-xs text-muted-foreground font-normal mt-0.5">{group.description}</p>
+            {!endpointVerified ? (
+              /* ── Lock gate ── */
+              <div className="flex flex-col items-center justify-center gap-4 py-14 px-6 text-center border-t border-border/50">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                  <Lock className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Test your endpoint first</p>
+                  <p className="text-xs text-muted-foreground max-w-xs">
+                    Verify your endpoint URL above before configuring event subscriptions.
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" onClick={focusUrlInput} className="gap-2">
+                  <FlaskConical className="h-3.5 w-3.5" />
+                  Test Endpoint
+                </Button>
+              </div>
+            ) : (
+              /* ── Accordion (verified) ── */
+              <Accordion
+                type="multiple"
+                defaultValue={webhookEventGroups.map((g) => g.id)}
+                className="w-full"
+              >
+                {webhookEventGroups.map((group) => {
+                  const subscribedCount = getGroupSubscribedCount(group);
+                  return (
+                    <AccordionItem key={group.id} value={group.id} className="border-b last:border-0">
+                      <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/40 transition-colors">
+                        <div className="flex items-center justify-between w-full pr-2 gap-4">
+                          <div className="text-left">
+                            <p className="font-medium text-sm">{group.label}</p>
+                            <p className="text-xs text-muted-foreground font-normal mt-0.5">{group.description}</p>
+                          </div>
+                          <Badge
+                            variant={subscribedCount > 0 ? "default" : "secondary"}
+                            className="shrink-0 text-xs"
+                          >
+                            {subscribedCount} / {group.events.length}
+                          </Badge>
                         </div>
-                        <Badge
-                          variant={subscribedCount > 0 ? "default" : "secondary"}
-                          className="shrink-0 text-xs"
-                        >
-                          {subscribedCount} / {group.events.length}
-                        </Badge>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="pb-0">
-                      <div className="border-t border-border/50">
-                        {group.events.map((event, idx) => {
-                          const isSubscribed = subscriptions[event.id];
-                          return (
-                            <div
-                              key={event.id}
-                              className={`flex items-center gap-4 px-6 py-3.5 transition-colors ${
-                                idx < group.events.length - 1 ? "border-b border-border/30" : ""
-                              } ${isSubscribed ? "bg-primary/[0.03]" : ""}`}
-                            >
-                              {/* Event name chip */}
-                              <code className="font-mono text-xs bg-muted px-2 py-1 rounded shrink-0 min-w-0 max-w-[220px] truncate">
-                                {event.name}
-                              </code>
-
-                              {/* Description */}
-                              <p className="flex-1 text-sm text-muted-foreground leading-snug hidden sm:block">
-                                {event.description}
-                              </p>
-
-                              {/* Test button — only visible when subscribed, left of status badge */}
-                              <div className="shrink-0 w-[72px] flex justify-end hidden md:flex">
-                                {isSubscribed && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="gap-1.5 text-xs h-8 px-3"
-                                    onClick={() => handleTest(event.id)}
-                                  >
-                                    <Zap className="h-3 w-3" />
-                                    Test
-                                  </Button>
-                                )}
-                              </div>
-
-                              {/* Status badge */}
-                              <Badge
-                                variant={isSubscribed ? "default" : "secondary"}
-                                className={`shrink-0 text-xs hidden md:flex ${
-                                  isSubscribed
-                                    ? "bg-success/15 text-success border-success/30 hover:bg-success/20"
-                                    : ""
-                                }`}
+                      </AccordionTrigger>
+                      <AccordionContent className="pb-0">
+                        <div className="border-t border-border/50">
+                          {group.events.map((event, idx) => {
+                            const isSubscribed = subscriptions[event.id];
+                            return (
+                              <div
+                                key={event.id}
+                                className={`flex items-center gap-4 px-6 py-3.5 transition-colors ${
+                                  idx < group.events.length - 1 ? "border-b border-border/30" : ""
+                                } ${isSubscribed ? "bg-primary/[0.03]" : ""}`}
                               >
-                                {isSubscribed ? "Subscribed" : "Unsubscribed"}
-                              </Badge>
+                                {/* Event name chip */}
+                                <code className="font-mono text-xs bg-muted px-2 py-1 rounded shrink-0 min-w-0 max-w-[220px] truncate">
+                                  {event.name}
+                                </code>
 
-                              {/* Toggle */}
-                              <Switch
-                                checked={isSubscribed}
-                                onCheckedChange={(checked) => handleToggle(event.id, checked)}
-                                className="shrink-0"
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                );
-              })}
-            </Accordion>
+                                {/* Description */}
+                                <p className="flex-1 text-sm text-muted-foreground leading-snug hidden sm:block">
+                                  {event.description}
+                                </p>
+
+                                {/* Test button — only visible when subscribed, left of status badge */}
+                                <div className="shrink-0 w-[72px] flex justify-end hidden md:flex">
+                                  {isSubscribed && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="gap-1.5 text-xs h-8 px-3"
+                                      onClick={() => handleTest(event.id)}
+                                    >
+                                      <Zap className="h-3 w-3" />
+                                      Test
+                                    </Button>
+                                  )}
+                                </div>
+
+                                {/* Status badge */}
+                                <Badge
+                                  variant={isSubscribed ? "default" : "secondary"}
+                                  className={`shrink-0 text-xs hidden md:flex ${
+                                    isSubscribed
+                                      ? "bg-success/15 text-success border-success/30 hover:bg-success/20"
+                                      : ""
+                                  }`}
+                                >
+                                  {isSubscribed ? "Subscribed" : "Unsubscribed"}
+                                </Badge>
+
+                                {/* Toggle */}
+                                <Switch
+                                  checked={isSubscribed}
+                                  onCheckedChange={(checked) => handleToggle(event.id, checked)}
+                                  className="shrink-0"
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+              </Accordion>
+            )}
           </CardContent>
         </Card>
 
