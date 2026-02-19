@@ -1,155 +1,223 @@
 
-# Sidebar Theme Toggle Relocation + Users Page
+# App Settings — Full Redesign (CPaaS Enterprise Console)
 
-## Summary of Changes
+## Overview
 
-Three areas of work:
+The current `Settings` page is minimal — just Account Name, Timezone, and a basic Danger Zone. This redesign replaces it entirely with an **8-section enterprise-grade settings module** that matches the CPaaS spec: channel-agnostic, security-forward, and governance-ready.
 
-1. **Sidebar cleanup** — Remove the "Dark mode / Light mode" text label from the footer; keep only the icon button. Relocate the theme toggle icon to the top of each page (inside `DashboardLayout`'s top-bar area).
-2. **Add Users nav item** — Add a `Users` entry in the sidebar nav list with a `Users` icon, linking to `/apps/:appId/users`.
-3. **New Users page** — A full page at that route showing a table of app users with roles, plus an "Invite User" modal.
+The page uses a **two-column layout**: a sticky left-side section navigation (within the settings page itself, not the app sidebar) and a main content area on the right. Each section is a distinct card group, clearly separated.
 
 ---
 
-## Change 1: Sidebar Footer — Remove Theme Label
+## Layout Architecture
 
-**File:** `src/components/layout/AppSidebar.tsx`
-
-The footer currently has:
+```text
+┌─ AppSidebar ──┬─────────────────────────────────────────────────────┐
+│  Overview     │  ← breadcrumb: Apps / {App Name} / Settings          │
+│  Products     │  App Settings                                         │
+│  Credentials  │                                                       │
+│  Webhooks     │  ┌── Left Nav ──┐  ┌──────── Section Content ──────┐ │
+│  Logs         │  │ ● General    │  │  [General Card]               │ │
+│  Settings ←   │  │   Environ..  │  │                               │ │
+│  Users        │  │   API Cred.  │  │                               │ │
+│               │  │   Security   │  │                               │ │
+│               │  │   Compliance │  │                               │ │
+│               │  │   Usage      │  │                               │ │
+│               │  │   Audit      │  │                               │ │
+│               │  │   Danger     │  │                               │ │
+│               │  └─────────────┘  └───────────────────────────────┘ │
+└───────────────┴─────────────────────────────────────────────────────┘
 ```
-[ Moon/Sun icon ]  Light mode / Dark mode    ← remove the text label
-[ LogOut icon  ]   Sign out
-```
 
-After the change, the theme button becomes icon-only in the footer (same as the collapsed state already is). The text `{!collapsed && <span>...</span>}` is removed from the theme button only; the Sign Out text label is kept as-is.
-
-**Also add `Users` to navItems:**
-```ts
-{ title: "Users", url: `${prefix}/users`, icon: Users },
-```
-Import `Users` from `lucide-react`. Place it after Settings.
+The left nav uses `scrollIntoView` anchor-based navigation with `id` attributes on each section. Active section is highlighted using an intersection observer or scroll event.
 
 ---
 
-## Change 2: Theme Toggle Icon at the Top of the Screen
+## Section-by-Section Design
 
-**File:** `src/components/layout/DashboardLayout.tsx`
+### 1. General
+Fields rendered in a single card:
+- **App Name** — editable `Input`, saves on button click
+- **App ID** — read-only `Input` with a copy-to-clipboard icon button
+- **Environment** — read-only badge (`production` = amber, `staging` = blue, `development` = slate)
+- **Description** — optional `Textarea`, editable
+- **Created Date** — read-only text (mocked as app creation timestamp)
+- **Owner** — read-only display (uses `accountName` from context)
 
-Add a thin top-right floating icon button that is always visible over the main content area. The button sits `absolute top-4 right-6` inside the `<main>` wrapper:
-
-```tsx
-<main className="ml-60 min-h-screen p-8 transition-all duration-200 relative">
-  {/* Theme toggle — top right */}
-  <div className="absolute top-4 right-6">
-    <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-8 w-8">
-      {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-    </Button>
-  </div>
-  {children}
-</main>
-```
-
-`DashboardLayout` will import `useTheme`, `Button`, `Sun`, `Moon`.
+Save button triggers `updateAccountName` and toast confirmation.
 
 ---
 
-## Change 3: Register `/apps/:appId/users` Route
+### 2. Environment & Mode
+Card with toggle rows:
 
-**File:** `src/App.tsx`
-
-Add:
-```tsx
-import Users from "./pages/Users";
-...
-<Route path="/apps/:appId/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
-```
-
----
-
-## Change 4: New `Users` Page
-
-**File:** `src/pages/Users.tsx` (new)
-
-### Layout
-
-```
-┌────────────────────────────────────────────────────────────┐
-│  Users                                   [ + Invite User ] │
-│  Manage who has access to this app                         │
-├────────────────────────────────────────────────────────────┤
-│  Name              Email                  Role    Joined    │
-│  ─────────────────────────────────────────────────────      │
-│  👑 Soumik Choudhury  soumik@helo.ai      Admin   —         │
-│  (future invited users show here)                           │
-└────────────────────────────────────────────────────────────┘
-```
-
-### Role Display
-
-| Role | Icon | Color |
+| Control | Type | Default |
 |---|---|---|
-| Admin | `ShieldCheck` | Amber/orange badge |
-| Developer | `Code2` | Blue badge |
+| Message Execution | Switch | On |
+| Maintenance Mode | Switch | Off |
 
-### Default User
+- If `app.environment === "production"`, show a `Production` lock badge; sandbox is only for non-production
+- Disabling Message Execution shows a yellow warning banner: "Outbound API calls will be blocked while execution is disabled"
+- Each toggle includes a label, a sublabel description, and the switch right-aligned
+- State is local (`useState`) — no backend in MVP
 
-One hardcoded mock row pre-seeded in local state:
+---
+
+### 3. API Credentials
+Replaces the existing `/credentials` page content shown inline here:
+
+Displays:
+- **Primary API Key** — masked by default (`helo_live_••••••••••••••••`), with a show/hide eye button
+- **Created date** — mocked static
+- **Last used** — mocked static (e.g., "2 hours ago")
+
+Action buttons:
+- **Rotate Key** — opens an `AlertDialog` with explicit warning: "This will immediately invalidate your current key. All integrations must be updated." Calls `rotateApiKey(appId)` on confirm.
+- After rotation: shows the new key in full, one time, in a highlighted reveal box with a copy button and "Store this key securely. It will not be shown again." warning.
+
+---
+
+### 4. Security Controls
+Card with status indicator in header (`Healthy` green chip or `Warning` amber chip based on rate limit usage):
+
+Fields:
+- **Rate Limit** — `Input` (number, RPM), editable, default `1000`
+- **Message Throughput Cap** — `Input` (messages/sec), editable, default `100`
+- **IP Allowlist** — `Textarea` placeholder "Enter IPs or CIDR blocks, one per line" — labeled "(Future-ready, optional)"
+- **Enforce HTTPS-only** — read-only `Switch` locked to `on` with a lock icon and tooltip "Always enforced — cannot be disabled"
+
+A mini progress bar shows rate limit usage (mocked at 34%).
+
+---
+
+### 5. Compliance & Data Governance
+Card with compliance status chip:
+
+Fields:
+- **Data Retention Period** — `Select` with options: 7 days / 30 days / 90 days
+- **Log Retention Policy** — `Select`: 7 days / 30 days / 90 days / 1 year
+- **PII Masking** — `Switch`, on by default, with subtext "Masks phone numbers and identifiers in logs"
+- **Data Deletion Callback URL** — `Input`, optional, placeholder `https://your-service.com/gdpr/delete`
+
+Compliance status chip: green "Compliant" if PII masking on + retention < 90 days, else amber "Review Required".
+
+---
+
+### 6. Usage Controls
+Card split into two areas:
+
+**Current Usage** (read-only display row):
+- Messaging Tier: `Professional`
+- Current Throughput: `34 msg/s`
+- Monthly Volume: `142,500 / 500,000`
+- Mini progress bar for volume usage
+
+**Controls**:
+- **Daily Message Cap** — `Input` (optional), placeholder "Unlimited"
+- **Alert Threshold** — `Slider` 50–100%, default 80%, shows current value label
+
+---
+
+### 7. Audit & Activity
+Read-only log table with columns:
+
+| Timestamp | Actor | Action | Previous | New Value |
+|---|---|---|---|---|
+| Feb 19, 14:32 | soumik@helo.ai | API Key Rotated | `helo_live_abc...` | `helo_live_xyz...` |
+| Feb 19, 09:10 | soumik@helo.ai | Execution Enabled | Disabled | Enabled |
+| Feb 18, 16:05 | admin@acme.com | App Name Updated | "Old Name" | "Production App" |
+
+Mocked with 5–8 hardcoded entries. Table rows are striped, no actions. Badge above table: "Immutable log — entries cannot be modified or deleted." Small `Lock` icon.
+
+---
+
+### 8. Danger Zone
+Card with `border-destructive/50` border, three distinct action rows separated by dividers:
+
+| Action | Trigger | Confirmation |
+|---|---|---|
+| Disable App | Button "Disable App" | AlertDialog with typed confirmation: type "DISABLE" |
+| Regenerate API Key | Button "Regenerate" | AlertDialog with standard confirm |
+| Delete App | Button "Delete App" | AlertDialog with typed confirmation: type app name |
+
+Delete App button is additionally disabled with tooltip if active products exist.
+
+---
+
+## State Management
+
+All new state is **local to `Settings.tsx`** — no changes to `AppContext` except calling existing methods (`rotateApiKey`, `updateAccountName`).
+
+New local state:
+
 ```ts
-{ id: "1", name: "Soumik Choudhury", email: "soumik@helo.ai", role: "admin", joinedAt: null }
-```
+// Environment & Mode
+const [executionEnabled, setExecutionEnabled] = useState(true);
+const [maintenanceMode, setMaintenanceMode] = useState(false);
 
-### "Invite User" Modal
+// API Credentials
+const [keyVisible, setKeyVisible] = useState(false);
+const [newKeyRevealed, setNewKeyRevealed] = useState<string | null>(null);
 
-Clicking **+ Invite User** opens a `Dialog` with:
-- Email input (`type="email"`, required)
-- Role `Select` dropdown: Admin / Developer
-- **Send Invite** button — adds the user to the local list with a `pending` status indicator
+// Security
+const [rateLimit, setRateLimit] = useState("1000");
+const [throughputCap, setThroughputCap] = useState("100");
+const [ipAllowlist, setIpAllowlist] = useState("");
 
-After submitting, a `toast` fires: *"Invite sent — An invitation has been sent to [email]."*
+// Compliance
+const [dataRetention, setDataRetention] = useState("30");
+const [logRetention, setLogRetention] = useState("90");
+const [piiMasking, setPiiMasking] = useState(true);
+const [deletionCallbackUrl, setDeletionCallbackUrl] = useState("");
 
-The new row appears in the table immediately with a "Pending" badge next to their email (since they haven't accepted yet). Once accepted (simulated — no actual email), the status would change.
+// Usage
+const [dailyCap, setDailyCap] = useState("");
+const [alertThreshold, setAlertThreshold] = useState([80]);
 
-### Table columns
-
-| Column | Content |
-|---|---|
-| Name | Full name (or `—` if pending) |
-| Email | Email address + optional "Pending" badge |
-| Role | Icon + role label badge |
-| Status | "Active" green chip / "Pending" amber chip |
-| Actions | Kebab menu or remove button (future-proofed) |
-
-### State model (local, no backend)
-
-```ts
-type AppRole = "admin" | "developer";
-type UserStatus = "active" | "pending";
-
-interface AppUser {
-  id: string;
-  name: string | null;
-  email: string;
-  role: AppRole;
-  status: UserStatus;
-}
+// Left-nav active section
+const [activeSection, setActiveSection] = useState("general");
 ```
 
 ---
 
-## Files to Create / Modify
+## Left-Side Section Navigation
+
+A sticky `nav` panel on the left with anchor links. Each item is a `button` that calls:
+
+```ts
+document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth" });
+setActiveSection(sectionId);
+```
+
+Active item is styled with `bg-muted text-foreground font-medium` and a left accent border.
+
+Sections list:
+1. General
+2. Environment & Mode
+3. API Credentials
+4. Security Controls
+5. Compliance & Data Governance
+6. Usage Controls
+7. Audit & Activity
+8. Danger Zone (styled in `text-destructive`)
+
+---
+
+## Files to Modify
 
 | File | Action |
 |---|---|
-| `src/components/layout/AppSidebar.tsx` | Add Users nav item, remove theme text label |
-| `src/components/layout/DashboardLayout.tsx` | Add top-right theme toggle icon |
-| `src/App.tsx` | Register `/apps/:appId/users` route |
-| `src/pages/Users.tsx` | Create new Users page |
+| `src/pages/Settings.tsx` | Full replacement — all 8 sections, left-nav, new local state |
+
+No other files need changes. The route, layout, breadcrumbs, and sidebar are already correct.
 
 ---
 
-## Implementation Order
+## Implementation Notes
 
-1. Update `AppSidebar.tsx` — add `Users` nav item + remove theme label text
-2. Update `DashboardLayout.tsx` — add top-right theme icon button
-3. Update `App.tsx` — register new route
-4. Create `src/pages/Users.tsx` — full Users page with table + invite modal
+- The existing `timezone` and `updateTimezone` from context are **removed** from Settings (timezone is an account-level concern, not an app-level concern per the spec). The General section instead shows App Name, App ID, Description, Environment, Created Date, Owner.
+- The existing "Disable Products" section in Danger Zone is **removed** — per spec, product configuration belongs in Product Settings, not App Settings.
+- All status indicator chips follow consistent sizing: `text-xs px-2 py-0.5 rounded-full border`.
+- Section cards use consistent spacing: `mb-8` between cards.
+- The left nav is `w-48 shrink-0 sticky top-8 self-start` — does not interfere with the app sidebar.
+- The overall content wrapper changes from `max-w-2xl` to `flex gap-8 items-start`.
