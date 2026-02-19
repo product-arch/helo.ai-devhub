@@ -24,14 +24,16 @@ const layerColors: Record<string, string> = {
 
 interface ApiLineItemProps {
   api: WhatsAppApi;
+  isEssential?: boolean;
 }
 
-export function ApiLineItem({ api }: ApiLineItemProps) {
+export function ApiLineItem({ api, isEssential = false }: ApiLineItemProps) {
   const [enabled, setEnabled] = useState(false);
   const [requested, setRequested] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
 
-  const isExpanded = enabled;
+  const isExpanded = isEssential ? isOpen : enabled;
 
   const handleToggle = (checked: boolean) => {
     setEnabled(checked);
@@ -49,14 +51,21 @@ export function ApiLineItem({ api }: ApiLineItemProps) {
     });
   };
 
+  const handleEssentialRowClick = () => {
+    if (isEssential) setIsOpen((prev) => !prev);
+  };
+
   return (
     <Collapsible open={isExpanded}>
       <div className={cn(
         "border-b border-border last:border-0 transition-colors",
         isExpanded && "bg-muted/30"
       )}>
-        <CollapsibleTrigger asChild disabled={!enabled}>
-          <div className="flex items-center gap-3 px-4 py-3 cursor-default">
+        <CollapsibleTrigger asChild disabled={!isEssential && !enabled}>
+          <div
+            className={cn("flex items-center gap-3 px-4 py-3", isEssential ? "cursor-pointer" : "cursor-default")}
+            onClick={handleEssentialRowClick}
+          >
             {/* Method badge */}
             <span className={cn("text-[10px] font-bold uppercase px-2 py-0.5 rounded-full shrink-0 w-16 text-center", methodColors[api.method] || "bg-muted text-muted-foreground")}>
               {api.method}
@@ -80,7 +89,12 @@ export function ApiLineItem({ api }: ApiLineItemProps) {
 
             {/* Control */}
             <div className="shrink-0 flex items-center gap-2">
-              {api.accessType === "toggle" ? (
+              {isEssential ? (
+                <span className="flex items-center gap-1.5 text-xs text-green-600 bg-green-500/10 border border-green-500/20 rounded-full px-2.5 py-0.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-green-500 shrink-0" />
+                  Always Active
+                </span>
+              ) : api.accessType === "toggle" ? (
                 <Switch checked={enabled} onCheckedChange={handleToggle} />
               ) : (
                 requested ? (
@@ -94,7 +108,7 @@ export function ApiLineItem({ api }: ApiLineItemProps) {
                   </Button>
                 )
               )}
-              {enabled && (
+              {(isEssential || enabled) && (
                 <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", isExpanded && "rotate-180")} />
               )}
             </div>

@@ -9,6 +9,7 @@ export interface WhatsAppApi {
   classification: string;
   layer: string;
   accessType: "toggle" | "request";
+  isEssential: boolean;
 }
 
 // Seeded pseudo-random for consistent accessType on unclassified APIs
@@ -17,7 +18,7 @@ function seededRandom(seed: number): number {
   return x - Math.floor(x);
 }
 
-const rawApis: Omit<WhatsAppApi, "id" | "accessType">[] = [
+const rawApis: Omit<WhatsAppApi, "id" | "accessType" | "isEssential">[] = [
   { category: "Activities Log", endpoint: "/{WABA_ID}/activities", method: "GET", requiredId: "WABA_ID", purpose: "Account activity history", scope: "whatsapp_business_management", classification: "Internal Only", layer: "WABA" },
   { category: "AI Thread Search", endpoint: "/{PHONE_NUMBER_ID}/meta_ai_business_agent_thread_search", method: "GET", requiredId: "PHONE_NUMBER_ID", purpose: "AI-powered thread search", scope: "whatsapp_business_management", classification: "Future Scope", layer: "Phone" },
   { category: "Assigned Users", endpoint: "/{WABA_ID}/assigned_users", method: "GET", requiredId: "WABA_ID", purpose: "List users mapped to WABA", scope: "whatsapp_business_management", classification: "Internal Only", layer: "WABA" },
@@ -74,8 +75,8 @@ const rawApis: Omit<WhatsAppApi, "id" | "accessType">[] = [
 
 export const whatsappApis: WhatsAppApi[] = rawApis.map((api, index) => {
   const id = api.category.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/_+$/, "");
-  const isMvp = api.classification === "MVP";
-  const accessType: "toggle" | "request" = isMvp ? "toggle" : (seededRandom(index + 42) > 0.3 ? "request" : "toggle");
+  const isEssential = api.classification === "MVP";
+  const accessType: "toggle" | "request" = isEssential ? "toggle" : (seededRandom(index + 42) > 0.3 ? "request" : "toggle");
 
-  return { ...api, id, accessType };
+  return { ...api, id, accessType, isEssential };
 });
