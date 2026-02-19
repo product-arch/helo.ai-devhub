@@ -14,7 +14,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Box, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Plus, Box, AlertTriangle, CheckCircle2, ShieldCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Moon, Sun, LogOut } from "lucide-react";
@@ -140,11 +140,17 @@ export default function Apps() {
                         </Badge>
                       </div>
                     </div>
-                    {app.status === "healthy" ? (
-                      <CheckCircle2 className="h-4 w-4 text-success" />
-                    ) : (
-                      <AlertTriangle className="h-4 w-4 text-warning" />
-                    )}
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                      {app.status === "healthy" ? (
+                        <CheckCircle2 className="h-4 w-4 text-success" />
+                      ) : (
+                        <AlertTriangle className="h-4 w-4 text-warning" />
+                      )}
+                      <Badge variant="outline" className="flex items-center gap-1 text-[10px] bg-warning/10 text-warning border-warning/20">
+                        <ShieldCheck className="h-3 w-3" />
+                        Admin
+                      </Badge>
+                    </div>
                   </div>
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <span>{enabledCount} of {app.products.length} products enabled</span>
