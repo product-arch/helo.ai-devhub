@@ -15,7 +15,7 @@ import { Check, X, ExternalLink, Copy, Check as CheckIcon } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { whatsappApis } from "@/data/whatsappApis";
-import { ApiLineItem } from "@/components/ApiLineItem";
+import { WhatsAppApiCatalog } from "@/components/WhatsAppApiCatalog";
 
 interface EndpointDef {
   id: string;
@@ -84,52 +84,13 @@ export default function ProductDetail() {
     const advancedApis = whatsappApis.filter((a) => !a.isEssential);
 
     return (
-      <DashboardLayout>
-        <PageHeader
-          title="WhatsApp Messaging"
-          breadcrumbs={[
-            { label: "Apps", href: "/apps" },
-            { label: app.name, href: `/apps/${appId}/overview` },
-            { label: "Products", href: `/apps/${appId}/products` },
-            { label: "WhatsApp Messaging" },
-          ]}
-          actions={<StatusBadge status={product.status} />}
-        />
-
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">API Catalog</CardTitle>
-              <span className="text-xs text-muted-foreground">{whatsappApis.length} APIs</span>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            {/* Essential section header */}
-            <div className="px-4 py-2.5 bg-muted/40 border-b border-border flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-foreground">Essential APIs</p>
-                <p className="text-[11px] text-muted-foreground">Always active · Core capabilities included in all plans</p>
-              </div>
-              <span className="text-[11px] text-muted-foreground">{essentialApis.length} APIs</span>
-            </div>
-            {essentialApis.map((api) => (
-              <ApiLineItem key={api.id} api={api} isEssential />
-            ))}
-
-            {/* Advanced section header */}
-            <div className="px-4 py-2.5 bg-muted/40 border-b border-t border-border flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-foreground">Advanced APIs</p>
-                <p className="text-[11px] text-muted-foreground">Opt-in access · Enable per your integration requirements</p>
-              </div>
-              <span className="text-[11px] text-muted-foreground">{advancedApis.length} APIs</span>
-            </div>
-            {advancedApis.map((api) => (
-              <ApiLineItem key={api.id} api={api} />
-            ))}
-          </CardContent>
-        </Card>
-      </DashboardLayout>
+      <WhatsAppApiCatalog
+        app={app}
+        appId={appId!}
+        product={product}
+        essentialApis={essentialApis}
+        advancedApis={advancedApis}
+      />
     );
   }
 
