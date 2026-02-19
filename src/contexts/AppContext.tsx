@@ -45,7 +45,7 @@ export interface LogEvent {
   timestamp: string;
   product: string;
   eventType: string;
-  status: "success" | "failed" | "pending";
+  status: "success" | "failed" | "pending" | "retried" | "queued" | "rate_limited";
   message: string;
   payload: object;
   correlationId: string;
@@ -174,14 +174,22 @@ const generateMockLogEvents = (): LogEvent[] => {
   const events: LogEvent[] = [];
   const eventTypes = ["message.sent", "message.delivered", "message.failed", "webhook.triggered", "config.updated"];
   const products = ["SMS", "RCS", "WhatsApp", "Webhooks"];
-  const statuses: ("success" | "failed" | "pending")[] = ["success", "failed", "pending"];
+  const statuses: LogEvent["status"][] = ["success", "success", "success", "failed", "pending", "retried", "queued", "rate_limited"];
+  const messages: Record<LogEvent["status"], string> = {
+    success: "Operation completed successfully",
+    failed: "Delivery failed: recipient unreachable",
+    pending: "Awaiting confirmation from provider",
+    retried: "Retried after transient failure",
+    queued: "Queued pending rate window",
+    rate_limited: "Rate limit exceeded; backing off",
+  };
   for (let i = 0; i < 50; i++) {
-    const status = statuses[Math.floor(Math.random() * (i < 5 ? 3 : 2))];
+    const status = statuses[Math.floor(Math.random() * statuses.length)];
     events.push({
       id: generateId(), timestamp: new Date(Date.now() - Math.random() * 86400000 * 14).toISOString(),
       product: products[Math.floor(Math.random() * products.length)],
       eventType: eventTypes[Math.floor(Math.random() * eventTypes.length)], status,
-      message: status === "failed" ? "Delivery failed: recipient unreachable" : "Operation completed successfully",
+      message: messages[status],
       payload: { messageId: `msg_${generateId()}`, recipient: "+1234567890", provider: ["Twilio", "Meta", "Google"][Math.floor(Math.random() * 3)] },
       correlationId: `cor_${generateId()}`, externalRefId: `ext_${generateId()}`, providerRef: `prov_${generateId()}`,
     });
