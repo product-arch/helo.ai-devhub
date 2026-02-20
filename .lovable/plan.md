@@ -1,205 +1,126 @@
 
-# App Settings — Full Redesign (CPaaS Enterprise Console)
+
+# Improve API Credentials Page
 
 ## Overview
 
-The current `Settings` page is minimal — just Account Name, Timezone, and a basic Danger Zone. This redesign replaces it entirely with an **8-section enterprise-grade settings module** that matches the CPaaS spec: channel-agnostic, security-forward, and governance-ready.
-
-The page uses a **two-column layout**: a sticky left-side section navigation (within the settings page itself, not the app sidebar) and a main content area on the right. Each section is a distinct card group, clearly separated.
+Transform the current simple key-display page into a structured, 5-section enterprise credentials interface with identity metadata, deterministic scope visualization, operational metrics, credential audit trail, and multi-channel usage examples.
 
 ---
 
-## Layout Architecture
+## Section 1: Credential Overview (Top Section)
 
-```text
-┌─ AppSidebar ──┬─────────────────────────────────────────────────────┐
-│  Overview     │  ← breadcrumb: Apps / {App Name} / Settings          │
-│  Products     │  App Settings                                         │
-│  Credentials  │                                                       │
-│  Webhooks     │  ┌── Left Nav ──┐  ┌──────── Section Content ──────┐ │
-│  Logs         │  │ ● General    │  │  [General Card]               │ │
-│  Settings ←   │  │   Environ..  │  │                               │ │
-│  Users        │  │   API Cred.  │  │                               │ │
-│               │  │   Security   │  │                               │ │
-│               │  │   Compliance │  │                               │ │
-│               │  │   Usage      │  │                               │ │
-│               │  │   Audit      │  │                               │ │
-│               │  │   Danger     │  │                               │ │
-│               │  └─────────────┘  └───────────────────────────────┘ │
-└───────────────┴─────────────────────────────────────────────────────┘
-```
+Replace the current single "App-Level API Key" card with a richer identity card.
 
-The left nav uses `scrollIntoView` anchor-based navigation with `id` attributes on each section. Active section is highlighted using an intersection observer or scroll event.
+**New fields displayed as a metadata grid (2-column layout):**
 
----
-
-## Section-by-Section Design
-
-### 1. General
-Fields rendered in a single card:
-- **App Name** — editable `Input`, saves on button click
-- **App ID** — read-only `Input` with a copy-to-clipboard icon button
-- **Environment** — read-only badge (`production` = amber, `staging` = blue, `development` = slate)
-- **Description** — optional `Textarea`, editable
-- **Created Date** — read-only text (mocked as app creation timestamp)
-- **Owner** — read-only display (uses `accountName` from context)
-
-Save button triggers `updateAccountName` and toast confirmation.
-
----
-
-### 2. Environment & Mode
-Card with toggle rows:
-
-| Control | Type | Default |
+| Field | Source | Display |
 |---|---|---|
-| Message Execution | Switch | On |
-| Maintenance Mode | Switch | Off |
+| Key ID | Derived from `app.id` (e.g., `key_prod_001`) | Read-only monospace text with copy button |
+| Environment | `app.environment` | Badge: Production = amber, Staging = blue |
+| Status | New local state, default "Active" | StatusBadge: Active (green) / Suspended (amber) / Revoked (red) |
+| Created | Mocked static date (e.g., "Jan 15, 2026") | Read-only text |
+| Created by | `app.email` | Read-only text |
+| Last used | Mocked (e.g., "2 hours ago") | Read-only text |
 
-- If `app.environment === "production"`, show a `Production` lock badge; sandbox is only for non-production
-- Disabling Message Execution shows a yellow warning banner: "Outbound API calls will be blocked while execution is disabled"
-- Each toggle includes a label, a sublabel description, and the switch right-aligned
-- State is local (`useState`) — no backend in MVP
+**API Key row** (below metadata):
+- Masked by default, reveal/copy buttons (same as current)
+- When revealed, show a small amber warning: "Key is visible. Hide when done."
 
----
+**Action buttons:**
+- Rotate Key (existing AlertDialog)
+- Revoke Key (existing AlertDialog)
+- **Suspend Key** (new) -- toggles status to "Suspended" with confirmation dialog. Suspended state shows an amber banner at top of page: "This API key is suspended. API calls will be rejected."
 
-### 3. API Credentials
-Replaces the existing `/credentials` page content shown inline here:
-
-Displays:
-- **Primary API Key** — masked by default (`helo_live_••••••••••••••••`), with a show/hide eye button
-- **Created date** — mocked static
-- **Last used** — mocked static (e.g., "2 hours ago")
-
-Action buttons:
-- **Rotate Key** — opens an `AlertDialog` with explicit warning: "This will immediately invalidate your current key. All integrations must be updated." Calls `rotateApiKey(appId)` on confirm.
-- After rotation: shows the new key in full, one time, in a highlighted reveal box with a copy button and "Store this key securely. It will not be shown again." warning.
+Production environment cards get a subtle left border accent (`border-l-4 border-l-amber-500`).
 
 ---
 
-### 4. Security Controls
-Card with status indicator in header (`Healthy` green chip or `Warning` amber chip based on rate limit usage):
+## Section 2: Effective API Scope
 
-Fields:
-- **Rate Limit** — `Input` (number, RPM), editable, default `1000`
-- **Message Throughput Cap** — `Input` (messages/sec), editable, default `100`
-- **IP Allowlist** — `Textarea` placeholder "Enter IPs or CIDR blocks, one per line" — labeled "(Future-ready, optional)"
-- **Enforce HTTPS-only** — read-only `Switch` locked to `on` with a lock icon and tooltip "Always enforced — cannot be disabled"
+Replace the current warning-card scope list with a structured, per-product breakdown.
 
-A mini progress bar shows rate limit usage (mocked at 34%).
+**Header:** "Effective API Scope" with explanatory subtext: "API access is enforced by enabled products and messaging capabilities within this App."
 
----
+**Layout:** One collapsible card per product (SMS, RCS, WhatsApp, Webhooks). Each shows:
+- Product name + overall product status badge
+- Expandable capability list using `Collapsible` component
+- Each capability row shows:
+  - Icon: CheckCircle2 (green) for enabled, XCircle (muted) for disabled, AlertTriangle (amber) for restricted
+  - Capability name
+  - Status badge
 
-### 5. Compliance & Data Governance
-Card with compliance status chip:
-
-Fields:
-- **Data Retention Period** — `Select` with options: 7 days / 30 days / 90 days
-- **Log Retention Policy** — `Select`: 7 days / 30 days / 90 days / 1 year
-- **PII Masking** — `Switch`, on by default, with subtext "Masks phone numbers and identifiers in logs"
-- **Data Deletion Callback URL** — `Input`, optional, placeholder `https://your-service.com/gdpr/delete`
-
-Compliance status chip: green "Compliant" if PII masking on + retention < 90 days, else amber "Review Required".
+Products with all capabilities disabled show a single "No capabilities enabled" muted message instead of listing each one.
 
 ---
 
-### 6. Usage Controls
-Card split into two areas:
+## Section 3: Key Usage and Operational Metrics
 
-**Current Usage** (read-only display row):
-- Messaging Tier: `Professional`
-- Current Throughput: `34 msg/s`
-- Monthly Volume: `142,500 / 500,000`
-- Mini progress bar for volume usage
+New "Usage" card with mocked operational data displayed as clean data rows (no charts).
 
-**Controls**:
-- **Daily Message Cap** — `Input` (optional), placeholder "Unlimited"
-- **Alert Threshold** — `Slider` 50–100%, default 80%, shows current value label
+**Data rows (label : value pairs):**
+- Requests (24h): `12,847`
+- Error rate: `0.3%`
+- Current rate limit: `1,000 RPM`
+- Top endpoint: `POST /v1/sms/send`
 
----
+**Recent API Errors sub-section:**
+A small table (5 rows) showing:
+| Timestamp | Endpoint | Status | Error |
+|---|---|---|---|
+| Feb 20, 14:32 | /v1/sms/send | 429 | Rate limit exceeded |
+| Feb 20, 14:10 | /v1/wa/template | 403 | Capability not enabled |
+| ... | ... | ... | ... |
 
-### 7. Audit & Activity
-Read-only log table with columns:
-
-| Timestamp | Actor | Action | Previous | New Value |
-|---|---|---|---|---|
-| Feb 19, 14:32 | soumik@helo.ai | API Key Rotated | `helo_live_abc...` | `helo_live_xyz...` |
-| Feb 19, 09:10 | soumik@helo.ai | Execution Enabled | Disabled | Enabled |
-| Feb 18, 16:05 | admin@acme.com | App Name Updated | "Old Name" | "Production App" |
-
-Mocked with 5–8 hardcoded entries. Table rows are striped, no actions. Badge above table: "Immutable log — entries cannot be modified or deleted." Small `Lock` icon.
+Mocked with 5 hardcoded entries.
 
 ---
 
-### 8. Danger Zone
-Card with `border-destructive/50` border, three distinct action rows separated by dividers:
+## Section 4: Credential Audit Trail
 
-| Action | Trigger | Confirmation |
-|---|---|---|
-| Disable App | Button "Disable App" | AlertDialog with typed confirmation: type "DISABLE" |
-| Regenerate API Key | Button "Regenerate" | AlertDialog with standard confirm |
-| Delete App | Button "Delete App" | AlertDialog with typed confirmation: type app name |
+New "Audit Activity" card with an immutable-styled log table.
 
-Delete App button is additionally disabled with tooltip if active products exist.
+**Header badge:** "Immutable log -- entries cannot be modified or deleted" with a Lock icon.
+
+**Table columns:** Timestamp | Actor | Action | Previous State | New State
+
+**Mocked entries (6 rows):**
+- Key created, key rotated, key suspended, key reactivated, IP change, key rotated again
+- All with timestamps, actor emails, and state transitions
+
+Striped rows, no action buttons. Read-only presentation.
+
+---
+
+## Section 5: Usage Example (Multi-Channel)
+
+Replace the current static SMS curl example with a channel-selectable example.
+
+**Channel selector:** Tabs component with SMS | RCS | WhatsApp | Webhooks tabs.
+
+**For each channel:**
+- If the product has enabled capabilities: show the relevant `curl` example using the current API key (masked) and environment-appropriate base URL
+- If the product is disabled or has no enabled capabilities: show a muted explanation box instead of code:
+  - "WhatsApp Template Messaging is not enabled for this App. Enable it in Product Settings to use this API."
+
+**Example templates:**
+- SMS: `POST /v1/sms/send` (current example)
+- RCS: `POST /v1/rcs/send` with rich card payload
+- WhatsApp: `POST /v1/wa/template/send` with template payload
+- Webhooks: `POST /v1/webhooks/subscribe` with event subscription payload
 
 ---
 
 ## State Management
 
-All new state is **local to `Settings.tsx`** — no changes to `AppContext` except calling existing methods (`rotateApiKey`, `updateAccountName`).
-
-New local state:
+All new state is local to `Credentials.tsx`:
 
 ```ts
-// Environment & Mode
-const [executionEnabled, setExecutionEnabled] = useState(true);
-const [maintenanceMode, setMaintenanceMode] = useState(false);
-
-// API Credentials
-const [keyVisible, setKeyVisible] = useState(false);
-const [newKeyRevealed, setNewKeyRevealed] = useState<string | null>(null);
-
-// Security
-const [rateLimit, setRateLimit] = useState("1000");
-const [throughputCap, setThroughputCap] = useState("100");
-const [ipAllowlist, setIpAllowlist] = useState("");
-
-// Compliance
-const [dataRetention, setDataRetention] = useState("30");
-const [logRetention, setLogRetention] = useState("90");
-const [piiMasking, setPiiMasking] = useState(true);
-const [deletionCallbackUrl, setDeletionCallbackUrl] = useState("");
-
-// Usage
-const [dailyCap, setDailyCap] = useState("");
-const [alertThreshold, setAlertThreshold] = useState([80]);
-
-// Left-nav active section
-const [activeSection, setActiveSection] = useState("general");
+const [keyStatus, setKeyStatus] = useState<"active" | "suspended" | "revoked">("active");
+const [selectedChannel, setSelectedChannel] = useState("sms");
 ```
 
----
-
-## Left-Side Section Navigation
-
-A sticky `nav` panel on the left with anchor links. Each item is a `button` that calls:
-
-```ts
-document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth" });
-setActiveSection(sectionId);
-```
-
-Active item is styled with `bg-muted text-foreground font-medium` and a left accent border.
-
-Sections list:
-1. General
-2. Environment & Mode
-3. API Credentials
-4. Security Controls
-5. Compliance & Data Governance
-6. Usage Controls
-7. Audit & Activity
-8. Danger Zone (styled in `text-destructive`)
+Existing `rotateApiKey` from AppContext is reused. No context changes needed.
 
 ---
 
@@ -207,17 +128,18 @@ Sections list:
 
 | File | Action |
 |---|---|
-| `src/pages/Settings.tsx` | Full replacement — all 8 sections, left-nav, new local state |
+| `src/pages/Credentials.tsx` | Full replacement with all 5 sections |
 
-No other files need changes. The route, layout, breadcrumbs, and sidebar are already correct.
+No other files need changes.
 
 ---
 
 ## Implementation Notes
 
-- The existing `timezone` and `updateTimezone` from context are **removed** from Settings (timezone is an account-level concern, not an app-level concern per the spec). The General section instead shows App Name, App ID, Description, Environment, Created Date, Owner.
-- The existing "Disable Products" section in Danger Zone is **removed** — per spec, product configuration belongs in Product Settings, not App Settings.
-- All status indicator chips follow consistent sizing: `text-xs px-2 py-0.5 rounded-full border`.
-- Section cards use consistent spacing: `mb-8` between cards.
-- The left nav is `w-48 shrink-0 sticky top-8 self-start` — does not interfere with the app sidebar.
-- The overall content wrapper changes from `max-w-2xl` to `flex gap-8 items-start`.
+- Remove `max-w-2xl` constraint to allow full-width content
+- Use existing `StatusBadge`, `Card`, `Button`, `AlertDialog`, `Tabs`, `Collapsible`, `Table` components
+- Import `CheckCircle2`, `XCircle`, `AlertTriangle`, `Lock`, `Pause`, `Shield` from lucide-react
+- All mocked data is hardcoded constants defined at the top of the file
+- Section cards use `mb-8` spacing for clear visual separation
+- The page title remains "API Credentials" with the same breadcrumb structure
+
