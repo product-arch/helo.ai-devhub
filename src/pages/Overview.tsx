@@ -11,7 +11,11 @@ import {
 import {
   AlertTriangle, ArrowRight, Activity,
   MessageSquare, Smartphone, MessageCircle, Webhook,
+  Copy, Check,
 } from "lucide-react";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 // --- Icons map ---
@@ -64,8 +68,17 @@ export default function Overview() {
   const { apps } = useApp();
   const app = apps.find((a) => a.id === appId);
   const navigate = useNavigate();
+  const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
 
   if (!app) return <Navigate to="/apps" replace />;
+
+  const copyAppId = () => {
+    navigator.clipboard.writeText(app.id);
+    setCopied(true);
+    toast({ title: "Copied", description: "App ID copied to clipboard" });
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const activeCount = app.products.filter((p) => p.status !== "disabled").length;
   const totalCount = app.products.length;
@@ -100,6 +113,15 @@ export default function Overview() {
           isProduction && "border-l-4 border-l-amber-500"
         )}
       >
+        <div className="flex flex-col gap-1">
+          <span className="text-xs text-muted-foreground">App ID</span>
+          <div className="flex items-center gap-1">
+            <code className="text-xs font-mono">{app.id}</code>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={copyAppId}>
+              {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
+            </Button>
+          </div>
+        </div>
         <div className="flex flex-col gap-1">
           <span className="text-xs text-muted-foreground">Environment</span>
           <Badge variant="outline" className={envBadge[app.environment]?.className}>
