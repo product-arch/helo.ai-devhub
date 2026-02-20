@@ -18,7 +18,7 @@ import { Plus, Box, AlertTriangle, CheckCircle2, ShieldCheck } from "lucide-reac
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Moon, Sun, LogOut } from "lucide-react";
-import { EmailTagInput } from "@/components/EmailTagInput";
+import { EmailTagInput, InvitedUser } from "@/components/EmailTagInput";
 
 export default function Apps() {
   const { apps, createApp, selectApp, logout, accountName } = useApp();
@@ -30,17 +30,17 @@ export default function Apps() {
   const [newEmail, setNewEmail] = useState("");
   const [newEnv, setNewEnv] = useState<AppEnvironment>("production");
   const [newDescription, setNewDescription] = useState("");
-  const [invitedDevs, setInvitedDevs] = useState<string[]>([]);
+  const [invitedUsers, setInvitedUsers] = useState<InvitedUser[]>([]);
 
   const handleCreate = () => {
     if (!newName.trim() || !newEmail.trim()) return;
-    createApp(newName.trim(), newEmail.trim(), newEnv, newDescription.trim(), invitedDevs);
+    createApp(newName.trim(), newEmail.trim(), newEnv, newDescription.trim(), invitedUsers.map(u => u.email));
     toast({ title: "App created", description: `${newName} has been created.` });
     setNewName("");
     setNewEmail("");
     setNewEnv("production");
     setNewDescription("");
-    setInvitedDevs([]);
+    setInvitedUsers([]);
     setOpen(false);
   };
 
@@ -107,8 +107,8 @@ export default function Apps() {
                   <Textarea id="app-desc" placeholder="Describe what this app does..." value={newDescription} onChange={(e) => setNewDescription(e.target.value)} rows={3} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Invite Developers <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
-                  <EmailTagInput emails={invitedDevs} onChange={setInvitedDevs} />
+                  <Label>Invite Users <span className="text-xs text-muted-foreground font-normal">(optional)</span></Label>
+                  <EmailTagInput users={invitedUsers} onChange={setInvitedUsers} />
                 </div>
               </div>
               <DialogFooter>
