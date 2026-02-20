@@ -4,106 +4,244 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { useApp } from "@/contexts/AppContext";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Copy, Check, Eye, EyeOff, MessageSquare, Smartphone, MessageCircle, Webhook } from "lucide-react";
-import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from "@/components/ui/table";
+import {
+  AlertTriangle, ArrowRight, Activity,
+  MessageSquare, Smartphone, MessageCircle, Webhook,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
+// --- Icons map ---
 const productIcons: Record<string, React.ReactNode> = {
-  sms: <MessageSquare className="h-5 w-5" />,
-  rcs: <Smartphone className="h-5 w-5" />,
-  whatsapp: <MessageCircle className="h-5 w-5" />,
-  webhooks: <Webhook className="h-5 w-5" />,
+  sms: <MessageSquare className="h-4 w-4" />,
+  rcs: <Smartphone className="h-4 w-4" />,
+  whatsapp: <MessageCircle className="h-4 w-4" />,
+  webhooks: <Webhook className="h-4 w-4" />,
+};
+
+// --- Mocked last-activity per channel ---
+const lastActivity: Record<string, string> = {
+  sms: "2 hours ago",
+  rcs: "1 day ago",
+  whatsapp: "No activity",
+  webhooks: "35 min ago",
+};
+
+// --- Mocked operational metrics ---
+const operationalMetrics = [
+  { label: "Messages sent (24h)", value: "12,847", link: "logs", linkLabel: "View logs" },
+  { label: "Failure rate", value: "0.3%", link: "logs", linkLabel: "View logs" },
+  { label: "Webhook delivery rate", value: "98.7%", link: "webhooks", linkLabel: "View webhooks" },
+  { label: "API requests (24h)", value: "34,219", link: "logs", linkLabel: "View logs" },
+];
+
+// --- Mocked system activity ---
+const systemActivity = [
+  { ts: "Feb 20, 15:42", event: "SMS Messaging enabled", product: "SMS", status: "success" as const },
+  { ts: "Feb 20, 14:18", event: "API key rotated", product: "System", status: "success" as const },
+  { ts: "Feb 20, 11:05", event: "WhatsApp capability restricted", product: "WhatsApp", status: "failed" as const },
+  { ts: "Feb 19, 22:30", event: "Webhook delivery failures detected", product: "Webhooks", status: "failed" as const },
+  { ts: "Feb 19, 18:12", event: "RCS Messaging configured", product: "RCS", status: "success" as const },
+  { ts: "Feb 19, 16:00", event: "Execution paused", product: "System", status: "pending" as const },
+  { ts: "Feb 19, 10:45", event: "Two-Way SMS capability enabled", product: "SMS", status: "success" as const },
+  { ts: "Feb 18, 20:22", event: "Webhook URL updated", product: "Webhooks", status: "success" as const },
+  { ts: "Feb 18, 14:55", event: "API key rotated", product: "System", status: "success" as const },
+  { ts: "Feb 18, 09:10", event: "Execution resumed", product: "System", status: "success" as const },
+];
+
+// --- Environment badge config ---
+const envBadge: Record<string, { label: string; className: string }> = {
+  production: { label: "Production", className: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
+  staging: { label: "Staging", className: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
+  development: { label: "Development", className: "bg-muted text-muted-foreground border-border" },
 };
 
 export default function Overview() {
   const { appId } = useParams<{ appId: string }>();
   const { apps } = useApp();
   const app = apps.find((a) => a.id === appId);
-  const [showSecret, setShowSecret] = useState(false);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
-  const { toast } = useToast();
   const navigate = useNavigate();
 
   if (!app) return <Navigate to="/apps" replace />;
 
-  const copyToClipboard = (value: string, field: string) => {
-    navigator.clipboard.writeText(value);
-    setCopiedField(field);
-    toast({ title: "Copied", description: `${field} copied to clipboard` });
-    setTimeout(() => setCopiedField(null), 2000);
-  };
+  const activeCount = app.products.filter((p) => p.status !== "disabled").length;
+  const totalCount = app.products.length;
+  const isProduction = app.environment === "production";
+  const healthLabel = app.status === "healthy" ? "healthy" : "action_required";
 
-  const maskedSecret = app.apiKey.slice(0, 10) + "••••••••••••••••••••";
+  // Blocking issues
+  const blockingIssues = app.products
+    .filter((p) => p.blockingReason || p.status === "restricted")
+    .map((p) => ({
+      productId: p.id,
+      message: p.blockingReason
+        ? `${p.name} restricted — ${p.blockingReason}`
+        : `${p.name} restricted`,
+    }));
 
   return (
     <DashboardLayout>
-      <PageHeader title="Overview" breadcrumbs={[{ label: "Apps", href: "/apps" }, { label: app.name }, { label: "Overview" }]} />
+      <PageHeader
+        title="Overview"
+        breadcrumbs={[
+          { label: "Apps", href: "/apps" },
+          { label: app.name },
+          { label: "Overview" },
+        ]}
+      />
 
-      {/* Credentials Section */}
-      <Card className="mb-6">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-medium">App Credentials</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* App ID */}
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-xs text-muted-foreground block mb-1">App ID</span>
-              <code className="text-sm font-mono bg-muted px-3 py-1.5 rounded">{app.id}</code>
-            </div>
-            <Button variant="ghost" size="icon" onClick={() => copyToClipboard(app.id, "App ID")} className="shrink-0">
-              {copiedField === "App ID" ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
-            </Button>
-          </div>
-          {/* App Secret */}
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-xs text-muted-foreground block mb-1">App Secret</span>
-              <code className="text-sm font-mono bg-muted px-3 py-1.5 rounded">{showSecret ? app.apiKey : maskedSecret}</code>
-            </div>
-            <div className="flex gap-1">
-              <Button variant="ghost" size="icon" onClick={() => setShowSecret(!showSecret)} className="shrink-0">
-                {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
-              <Button variant="ghost" size="icon" onClick={() => copyToClipboard(app.apiKey, "App Secret")} className="shrink-0">
-                {copiedField === "App Secret" ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Section 1: App Status Header */}
+      <div
+        className={cn(
+          "flex flex-wrap items-center gap-6 p-4 rounded-lg bg-muted/30 mb-8",
+          isProduction && "border-l-4 border-l-amber-500"
+        )}
+      >
+        <div className="flex flex-col gap-1">
+          <span className="text-xs text-muted-foreground">Environment</span>
+          <Badge variant="outline" className={envBadge[app.environment]?.className}>
+            {envBadge[app.environment]?.label}
+          </Badge>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-xs text-muted-foreground">Execution Status</span>
+          <StatusBadge status="active" />
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-xs text-muted-foreground">App Health</span>
+          <StatusBadge status={healthLabel === "healthy" ? "active" : "restricted"} />
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-xs text-muted-foreground">Active Products</span>
+          <span className="text-sm font-medium">
+            {activeCount} of {totalCount} active
+          </span>
+        </div>
+      </div>
 
-      {/* Channel Products */}
-      <h2 className="text-lg font-medium mb-4">Channel Products</h2>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Section 2: Blocking Issues */}
+      {blockingIssues.length > 0 && (
+        <Card className="mb-8 bg-warning/5 border-warning/20">
+          <CardContent className="py-4 space-y-3">
+            {blockingIssues.map((issue) => (
+              <div key={issue.productId} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
+                  <span className="text-sm">{issue.message}</span>
+                </div>
+                <button
+                  onClick={() => navigate(`/apps/${appId}/products/${issue.productId}`)}
+                  className="text-xs text-primary hover:underline flex items-center gap-1 shrink-0"
+                >
+                  Resolve <ArrowRight className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Section 3: Channel Status Grid */}
+      <h2 className="text-lg font-medium mb-4">Channel Status</h2>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
         {app.products.map((product) => {
-          const isDisabled = product.status === "disabled";
+          const enabledCaps = product.capabilities.filter((c) => c.status === "enabled").length;
+          const totalCaps = product.capabilities.length;
+          const identityPresent = product.status !== "disabled";
+
           return (
-            <Card key={product.id} className="hover:border-foreground/20 transition-colors">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-2 mb-3">
+            <Card
+              key={product.id}
+              className="cursor-pointer hover:border-foreground/20 transition-colors"
+              onClick={() => navigate(`/apps/${appId}/products/${product.id}`)}
+            >
+              <CardContent className="pt-6 space-y-3">
+                <div className="flex items-center gap-2">
                   <div className="p-1.5 rounded bg-muted">{productIcons[product.id]}</div>
-                  <h3 className="font-medium text-sm">{product.name}</h3>
+                  <span className="font-medium text-sm">{product.name}</span>
                 </div>
                 <StatusBadge status={product.status} />
-                <p className="text-xs text-muted-foreground mt-2 mb-4">{product.description}</p>
-                {product.blockingReason && (
-                  <p className="text-xs text-warning mb-3">⚠ {product.blockingReason}</p>
-                )}
-                <Button
-                  size="sm"
-                  variant={isDisabled ? "default" : "outline"}
-                  className="w-full"
-                  onClick={() => navigate(`/apps/${appId}/products/${product.id}`)}
-                >
-                  {isDisabled ? "Setup" : "View Details"}
-                </Button>
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  <div>{enabledCaps} of {totalCaps} capabilities enabled</div>
+                  <div>Identity: {identityPresent ? "Configured" : "Missing"}</div>
+                  <div>Last activity: {lastActivity[product.id] || "—"}</div>
+                </div>
               </CardContent>
             </Card>
           );
         })}
       </div>
+
+      {/* Section 4: Operational Pulse */}
+      <Card className="mb-8">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-medium flex items-center gap-2">
+            <Activity className="h-4 w-4" /> Operational Pulse
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            {operationalMetrics.map((m) => (
+              <div key={m.label} className="space-y-1">
+                <span className="text-xs text-muted-foreground">{m.label}</span>
+                <p className="text-2xl font-semibold">{m.value}</p>
+                <button
+                  onClick={() => navigate(`/apps/${appId}/${m.link}`)}
+                  className="text-xs text-primary hover:underline"
+                >
+                  {m.linkLabel}
+                </button>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Section 5: Recent System Activity */}
+      <Card>
+        <CardHeader className="pb-2 flex flex-row items-center justify-between">
+          <CardTitle className="text-base font-medium">Recent System Activity</CardTitle>
+          <button
+            onClick={() => navigate(`/apps/${appId}/logs`)}
+            className="text-xs text-primary hover:underline"
+          >
+            View all
+          </button>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Timestamp</TableHead>
+                <TableHead>Event</TableHead>
+                <TableHead>Product</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {systemActivity.map((row, i) => (
+                <TableRow
+                  key={i}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => navigate(`/apps/${appId}/logs`)}
+                >
+                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                    {row.ts}
+                  </TableCell>
+                  <TableCell className="text-sm">{row.event}</TableCell>
+                  <TableCell className="text-sm">{row.product}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={row.status} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </DashboardLayout>
   );
 }
