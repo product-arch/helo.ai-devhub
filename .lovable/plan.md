@@ -1,145 +1,139 @@
 
 
-# Improve API Credentials Page
+# Redesign Overview Page -- Operational Status Surface
 
 ## Overview
 
-Transform the current simple key-display page into a structured, 5-section enterprise credentials interface with identity metadata, deterministic scope visualization, operational metrics, credential audit trail, and multi-channel usage examples.
+Replace the current Overview page (which displays credentials and product cards with setup buttons) with a pure read-only operational status interface. The page will have 5 distinct sections that communicate App health, blocking issues, channel readiness, system pulse, and recent activity -- without any configuration controls or credential display.
 
 ---
 
-## Section 1: Credential Overview (Top Section)
+## Section 1: App Status Header (Top Summary Strip)
 
-Replace the current single "App-Level API Key" card with a richer identity card.
+A compact horizontal strip below the page header showing four read-only status indicators side by side.
 
-**New fields displayed as a metadata grid (2-column layout):**
-
-| Field | Source | Display |
+| Indicator | Source | Display |
 |---|---|---|
-| Key ID | Derived from `app.id` (e.g., `key_prod_001`) | Read-only monospace text with copy button |
-| Environment | `app.environment` | Badge: Production = amber, Staging = blue |
-| Status | New local state, default "Active" | StatusBadge: Active (green) / Suspended (amber) / Revoked (red) |
-| Created | Mocked static date (e.g., "Jan 15, 2026") | Read-only text |
-| Created by | `app.email` | Read-only text |
-| Last used | Mocked (e.g., "2 hours ago") | Read-only text |
+| Environment | `app.environment` | Badge -- Production (amber), Staging (blue), Development (gray) |
+| Execution Status | Derived from app state (default: "Enabled") | Badge -- Enabled (green), Disabled (red), Maintenance (amber) |
+| App Health | `app.status` mapped: `healthy` = "Healthy" (green), `action_required` = "Warning" (amber) | StatusBadge with dot indicator |
+| Active Products | Count from `app.products` where status is not "disabled" | Text: "3 of 4 active" |
 
-**API Key row** (below metadata):
-- Masked by default, reveal/copy buttons (same as current)
-- When revealed, show a small amber warning: "Key is visible. Hide when done."
+Layout: Single row of 4 items inside a subtle `bg-muted/30` strip with rounded corners and padding. No card border -- just a horizontal bar.
 
-**Action buttons:**
-- Rotate Key (existing AlertDialog)
-- Revoke Key (existing AlertDialog)
-- **Suspend Key** (new) -- toggles status to "Suspended" with confirmation dialog. Suspended state shows an amber banner at top of page: "This API key is suspended. API calls will be rejected."
-
-Production environment cards get a subtle left border accent (`border-l-4 border-l-amber-500`).
+For Production apps, add a left border accent (`border-l-4 border-l-amber-500`).
 
 ---
 
-## Section 2: Effective API Scope
+## Section 2: Blocking Issues (Conditional)
 
-Replace the current warning-card scope list with a structured, per-product breakdown.
+Only rendered if there are blocking issues detected from:
+- Products with `blockingReason` set
+- Products with `status === "restricted"`
+- WhatsApp capabilities all restricted/disabled
 
-**Header:** "Effective API Scope" with explanatory subtext: "API access is enforced by enabled products and messaging capabilities within this App."
+Each issue row shows:
+- An `AlertTriangle` icon (amber)
+- Short description (e.g., "WhatsApp Messaging restricted -- Business verification pending")
+- A "Resolve" text link that navigates to the relevant product page (`/apps/{appId}/products/{productId}`)
 
-**Layout:** One collapsible card per product (SMS, RCS, WhatsApp, Webhooks). Each shows:
-- Product name + overall product status badge
-- Expandable capability list using `Collapsible` component
-- Each capability row shows:
-  - Icon: CheckCircle2 (green) for enabled, XCircle (muted) for disabled, AlertTriangle (amber) for restricted
-  - Capability name
-  - Status badge
-
-Products with all capabilities disabled show a single "No capabilities enabled" muted message instead of listing each one.
+Wrapped in a subtle amber-tinted card (`bg-warning/5 border-warning/20`). Hidden entirely when no issues exist.
 
 ---
 
-## Section 3: Key Usage and Operational Metrics
+## Section 3: Channel Status Grid
 
-New "Usage" card with mocked operational data displayed as clean data rows (no charts).
+Four cards in a responsive grid (`md:grid-cols-2 lg:grid-cols-4`), one per channel.
 
-**Data rows (label : value pairs):**
-- Requests (24h): `12,847`
-- Error rate: `0.3%`
-- Current rate limit: `1,000 RPM`
-- Top endpoint: `POST /v1/sms/send`
+Each card displays:
+- Channel icon + name (reusing existing `productIcons` map)
+- Status badge (Active / Configured / Restricted / Disabled)
+- Capability count: e.g., "3 of 4 enabled" -- computed from `product.capabilities`
+- Identity presence: "Configured" or "Missing" -- derived from product status (active/configured = Configured, disabled = Missing)
+- Last activity: Mocked timestamp (e.g., "2 hours ago", "No activity")
 
-**Recent API Errors sub-section:**
-A small table (5 rows) showing:
-| Timestamp | Endpoint | Status | Error |
-|---|---|---|---|
-| Feb 20, 14:32 | /v1/sms/send | 429 | Rate limit exceeded |
-| Feb 20, 14:10 | /v1/wa/template | 403 | Capability not enabled |
-| ... | ... | ... | ... |
+The entire card is clickable, navigating to `/apps/{appId}/products/{productId}`.
 
-Mocked with 5 hardcoded entries.
+No setup buttons, no descriptions, no configuration controls.
 
 ---
 
-## Section 4: Credential Audit Trail
+## Section 4: Operational Pulse
 
-New "Audit Activity" card with an immutable-styled log table.
+A single card with a horizontal row of 4 metric items.
 
-**Header badge:** "Immutable log -- entries cannot be modified or deleted" with a Lock icon.
+| Metric | Value (Mocked) | Links to |
+|---|---|---|
+| Messages sent (24h) | 12,847 | `/apps/{appId}/logs` |
+| Failure rate | 0.3% | `/apps/{appId}/logs` |
+| Webhook delivery rate | 98.7% | `/apps/{appId}/webhooks` |
+| API requests (24h) | 34,219 | `/apps/{appId}/logs` |
 
-**Table columns:** Timestamp | Actor | Action | Previous State | New State
+Each metric shows: label (muted text, small), value (large font, semibold), and a subtle "View logs" or "View webhooks" link below.
 
-**Mocked entries (6 rows):**
-- Key created, key rotated, key suspended, key reactivated, IP change, key rotated again
-- All with timestamps, actor emails, and state transitions
-
-Striped rows, no action buttons. Read-only presentation.
+Layout: 4-column grid inside a single card. No charts, no filters.
 
 ---
 
-## Section 5: Usage Example (Multi-Channel)
+## Section 5: Recent System Activity
 
-Replace the current static SMS curl example with a channel-selectable example.
+A compact table showing the last 10 system-level events.
 
-**Channel selector:** Tabs component with SMS | RCS | WhatsApp | Webhooks tabs.
+**Table columns:** Timestamp | Event | Product | Status
 
-**For each channel:**
-- If the product has enabled capabilities: show the relevant `curl` example using the current API key (masked) and environment-appropriate base URL
-- If the product is disabled or has no enabled capabilities: show a muted explanation box instead of code:
-  - "WhatsApp Template Messaging is not enabled for this App. Enable it in Product Settings to use this API."
+**Mocked entries (10 rows) -- system-level only:**
+- "SMS Messaging enabled"
+- "API key rotated"
+- "WhatsApp capability restricted"
+- "Webhook delivery failures detected"
+- "RCS Messaging configured"
+- "Execution paused"
+- "Two-Way SMS capability enabled"
+- "Webhook URL updated"
+- "API key rotated"
+- "Execution resumed"
 
-**Example templates:**
-- SMS: `POST /v1/sms/send` (current example)
-- RCS: `POST /v1/rcs/send` with rich card payload
-- WhatsApp: `POST /v1/wa/template/send` with template payload
-- Webhooks: `POST /v1/webhooks/subscribe` with event subscription payload
+Each row shows a StatusBadge for the status column. Clicking any row navigates to `/apps/{appId}/logs`.
+
+Card header includes "Recent System Activity" title and a "View all" link to the Logs page.
 
 ---
 
 ## State Management
 
-All new state is local to `Credentials.tsx`:
-
-```ts
-const [keyStatus, setKeyStatus] = useState<"active" | "suspended" | "revoked">("active");
-const [selectedChannel, setSelectedChannel] = useState("sms");
-```
-
-Existing `rotateApiKey` from AppContext is reused. No context changes needed.
+No new state needed. Everything is derived from the existing `app` object in AppContext:
+- Products and capabilities for channel status and blocking issues
+- Environment and health status for the header strip
+- Mocked constants for metrics and activity log (hardcoded at top of file)
 
 ---
 
-## Files to Modify
+## Technical Details
+
+### File to Modify
 
 | File | Action |
 |---|---|
-| `src/pages/Credentials.tsx` | Full replacement with all 5 sections |
+| `src/pages/Overview.tsx` | Full replacement with all 5 sections |
 
-No other files need changes.
+### Removed from Current Page
+- Credentials section (App ID, App Secret, copy/reveal buttons)
+- Product description text
+- Setup / View Details buttons
+- `showSecret`, `copiedField` state and clipboard logic
 
----
+### Components Used
+- `DashboardLayout`, `PageHeader` (existing)
+- `StatusBadge` (existing)
+- `Card`, `CardContent`, `CardHeader`, `CardTitle` (existing)
+- `Badge` (existing)
+- `Table`, `TableHeader`, `TableBody`, `TableRow`, `TableHead`, `TableCell` (existing)
+- `AlertTriangle`, `ArrowRight`, `Activity`, `MessageSquare`, `Smartphone`, `MessageCircle`, `Webhook` from lucide-react
 
-## Implementation Notes
-
-- Remove `max-w-2xl` constraint to allow full-width content
-- Use existing `StatusBadge`, `Card`, `Button`, `AlertDialog`, `Tabs`, `Collapsible`, `Table` components
-- Import `CheckCircle2`, `XCircle`, `AlertTriangle`, `Lock`, `Pause`, `Shield` from lucide-react
-- All mocked data is hardcoded constants defined at the top of the file
-- Section cards use `mb-8` spacing for clear visual separation
-- The page title remains "API Credentials" with the same breadcrumb structure
+### Layout Notes
+- Status header strip uses `flex items-center gap-6` with `p-4 rounded-lg bg-muted/30`
+- Channel cards use `cursor-pointer` with `onClick` navigation
+- Operational pulse uses `grid grid-cols-2 lg:grid-cols-4 gap-6` inside a single card
+- Activity table rows use `cursor-pointer hover:bg-muted/50` for click-to-navigate
+- All sections separated with `mb-8` spacing
 
