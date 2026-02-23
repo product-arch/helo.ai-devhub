@@ -143,9 +143,6 @@ export default function SignUp() {
           <Button variant="outline" className="w-full" onClick={() => handleSocialLogin("Google")} disabled={isLoading}>
             Continue with Google
           </Button>
-          <Button variant="outline" className="w-full" onClick={() => handleSocialLogin("GitHub")} disabled={isLoading}>
-            Continue with GitHub
-          </Button>
         </div>
 
         <p className="text-sm text-muted-foreground text-center">
