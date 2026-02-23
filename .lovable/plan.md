@@ -1,50 +1,80 @@
 
 
-# Brighten Dark Theme
+# Apply Custom Box Shadow to Block Elements
 
 ## Overview
 
-Lift the dark theme's base surfaces and text from near-black into warmer dark greys, improving readability and visual appeal while keeping the minimalistic, low-contrast aesthetic.
+Add the specified box shadow to all card-like, rectangular block elements across the project for improved depth and visibility, using a custom Tailwind shadow utility defined once and applied consistently.
 
-## Current vs. New Values
+## Approach
 
-All changes are in `src/index.css` inside the `.dark` block.
+Rather than manually editing every component file, the most maintainable approach is:
 
-| Variable | Current | New | Reasoning |
-|---|---|---|---|
-| `--background` | `0 0% 4%` | `0 0% 7%` | Base lifted from near-black to dark charcoal |
-| `--foreground` | `0 0% 63%` | `0 0% 72%` | Body text brighter for readability |
-| `--card` | `0 0% 6.5%` | `0 0% 10%` | Cards slightly lifted for better separation |
-| `--card-foreground` | `0 0% 63%` | `0 0% 72%` | Match foreground lift |
-| `--popover` | `0 0% 6.5%` | `0 0% 10%` | Match card surface |
-| `--popover-foreground` | `0 0% 63%` | `0 0% 72%` | Match foreground lift |
-| `--primary` | `0 0% 82%` | `0 0% 88%` | Headings and primary text slightly brighter |
-| `--secondary` | `0 0% 9%` | `0 0% 13%` | Secondary surfaces more visible |
-| `--secondary-foreground` | `0 0% 63%` | `0 0% 72%` | Match foreground lift |
-| `--muted` | `0 0% 9%` | `0 0% 13%` | Muted backgrounds lifted |
-| `--muted-foreground` | `0 0% 40%` | `0 0% 48%` | Subtle text more legible |
-| `--accent` | `0 0% 10%` | `0 0% 14%` | Accent backgrounds lifted |
-| `--accent-foreground` | `0 0% 63%` | `0 0% 72%` | Match foreground lift |
-| `--border` | `0 0% 11%` | `0 0% 16%` | Borders more visible for structure |
-| `--input` | `0 0% 11%` | `0 0% 16%` | Input borders match |
-| `--ring` | `0 0% 25%` | `0 0% 30%` | Focus rings slightly brighter |
-| `--sidebar-background` | `0 0% 5.5%` | `0 0% 9%` | Sidebar lifted alongside background |
-| `--sidebar-foreground` | `0 0% 55%` | `0 0% 62%` | Sidebar text brighter |
-| `--sidebar-accent` | `0 0% 8%` | `0 0% 12%` | Active nav items more visible |
-| `--sidebar-accent-foreground` | `0 0% 63%` | `0 0% 72%` | Match foreground lift |
-| `--sidebar-border` | `0 0% 11%` | `0 0% 16%` | Match border lift |
+1. Define a custom `shadow-block` utility in `tailwind.config.ts`
+2. Apply it to the base `Card` component (covers most block elements project-wide)
+3. Apply it to remaining standalone block elements in page files (tables, panels, code blocks)
 
-## Design Rationale
+## Shadow Value
 
-- Background moves from 4% to 7% lightness -- still firmly dark but no longer pitch-black
-- All foreground text jumps ~9 points (63% to 72%), improving contrast without feeling bright
-- Card and sidebar surfaces maintain a 3% offset from background for subtle layering
-- Borders lift from 11% to 16% so dividers and input outlines are actually discernible
-- Status colors (success, warning, destructive) remain unchanged to preserve semantic meaning
+```
+rgba(50, 50, 93, 0.25) 0px 2px 5px -1px, rgba(0, 0, 0, 0.3) 0px 1px 3px -1px
+```
 
-## File Modified
+## Changes
 
-| File | Action |
+### 1. `tailwind.config.ts` -- Add custom shadow
+
+Add a `boxShadow` entry under `theme.extend`:
+
+```
+boxShadow: {
+  block: "rgba(50, 50, 93, 0.25) 0px 2px 5px -1px, rgba(0, 0, 0, 0.3) 0px 1px 3px -1px",
+}
+```
+
+### 2. `src/components/ui/card.tsx` -- Update Card component
+
+Replace `shadow-sm` with `shadow-block` on the Card div. This automatically applies the shadow to every Card usage across all pages (Overview, Apps, Products, Settings, Credentials, etc.).
+
+### 3. `src/pages/Users.tsx` -- Standalone tables
+
+Add `shadow-block` to the two `rounded-lg border` table wrapper divs (users table and roles modal table).
+
+### 4. `src/pages/Settings.tsx` -- Standalone panels
+
+Add `shadow-block` to the bordered block elements: credentials panel (`bg-muted/40`), usage summary block, audit log table wrapper, and the revealed key warning block.
+
+### 5. `src/pages/Webhooks.tsx` -- Table/status blocks
+
+Add `shadow-block` to the URL test status block and any standalone bordered containers.
+
+### 6. `src/pages/ProductDetail.tsx` -- Standalone blocks
+
+Add `shadow-block` to bordered container elements for prerequisites and endpoint tables.
+
+### 7. `src/pages/Logs.tsx` -- Log table wrapper
+
+Add `shadow-block` to the log table container if it uses a standalone bordered div.
+
+### 8. `src/components/ui/dialog.tsx` -- Dialog content
+
+Replace `shadow-lg` with `shadow-block` on the DialogContent panel for consistency.
+
+### 9. `src/pages/Login.tsx` -- Login card
+
+Add `shadow-block` to the login form container if it's not already using the Card component.
+
+## Files Modified
+
+| File | Change |
 |---|---|
-| `src/index.css` | Update CSS custom property values inside `.dark` block (lines 56-97) |
+| `tailwind.config.ts` | Add `boxShadow.block` custom utility |
+| `src/components/ui/card.tsx` | `shadow-sm` to `shadow-block` |
+| `src/pages/Users.tsx` | Add `shadow-block` to table wrappers |
+| `src/pages/Settings.tsx` | Add `shadow-block` to panel blocks |
+| `src/pages/Webhooks.tsx` | Add `shadow-block` to bordered containers |
+| `src/pages/ProductDetail.tsx` | Add `shadow-block` to bordered containers |
+| `src/pages/Logs.tsx` | Add `shadow-block` to table wrapper |
+| `src/components/ui/dialog.tsx` | Update dialog shadow |
+| `src/pages/Login.tsx` | Add `shadow-block` to login container |
 
