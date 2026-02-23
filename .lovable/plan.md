@@ -1,119 +1,211 @@
 
 
-# RCS API Catalog -- Matching WhatsApp Pattern
+# World-Class Login and Sign Up Experience for helo.ai Developer Console
 
 ## Overview
 
-Populate the RCS product with all APIs from the uploaded CSV, using the same API Catalog design and functionality as WhatsApp (collapsible Essential/Advanced sections, toggles, request access, expandable code samples).
+Replace the current minimal login card with a full enterprise-grade authentication experience featuring a two-panel desktop layout, multiple auth methods (email, Google, GitHub, SSO), sign-up flow, MFA verification, and forgot-password flow. All screens share a consistent security-first, infrastructure-focused aesthetic.
 
-## Approach
+## New Pages and Routes
 
-1. **Generalize the shared type** -- Rename `WhatsAppApi` to a generic `MessagingApi` interface so both WhatsApp and RCS data files use the same shape
-2. **Create RCS data file** -- New `src/data/rcsApis.ts` with all 38 APIs from the CSV
-3. **Update components** to use the generic type
-4. **Wire RCS into ProductDetail** the same way WhatsApp is wired
+| Route | Page | Purpose |
+|---|---|---|
+| `/login` | Login | Primary sign-in (replaces current) |
+| `/signup` | SignUp | Account creation |
+| `/mfa` | MfaVerify | TOTP code entry post-login |
+| `/forgot-password` | ForgotPassword | Password reset request |
+| `/sso` | SsoLogin | Enterprise SSO domain entry |
 
-## API Classification from CSV
+## Layout Structure
 
-The CSV contains two scopes mapping to Essential vs Advanced:
+### Desktop (two-panel)
 
-**Essential (runtime -- `rcsbusinessmessaging` scope, 9 APIs):**
-- Send Agent Message (POST), Revoke Agent Message (DELETE), Send Agent Event (POST)
-- Upload File (POST), Upload File Resumable (POST)
-- Get Capabilities (GET)
-- Send Dialogflow Message (POST)
-- Invite Tester (POST)
-- Batch Get Users (POST)
+```text
++-----------------------------+-----------------------------+
+|                             |                             |
+|   helo.ai                   |   [Form Area]               |
+|   Developer Console         |                             |
+|                             |   Email + Password           |
+|   Secure access to          |   OR divider                |
+|   messaging infrastructure  |   Google / GitHub buttons   |
+|                             |   SSO button                |
+|   Shield icon               |   Secondary links           |
+|   "256-bit encrypted"       |                             |
+|   "SOC 2 compliant"         |                             |
+|   "99.99% uptime"           |                             |
+|                             |                             |
++-----------------------------+-----------------------------+
+```
 
-**Advanced (management -- `businesscommunications` scope, 29 APIs):**
-- Analytics: Agent Performances
-- Brand: Create, Delete, Get, List, Update
-- Agent: Create, Delete, Get, Get Launch Info, Get Verification, List, Update, Request Launch, Request Verification, Update Launch, Update Verification
-- Integration: Create, Delete, Get, List, Update
-- Partner: Get, Update
-- Region: List Regions
-- Tester: Create, Delete, Get, List
+Left panel: dark background (uses `--sidebar-background` tones), branding, tagline, security indicators.
+Right panel: clean form area on `--background`.
 
-## RCS Layer Mapping
+### Mobile
 
-| Layer | Description |
-|---|---|
-| Messaging | Send/revoke messages, events, Dialogflow |
-| File | Media upload (standard + resumable) |
-| Phone | Capabilities check, tester invite, batch users |
-| Brand | Brand CRUD operations |
-| Agent | Agent lifecycle, launch, verification |
-| Integration | Integration CRUD |
-| Partner | Partner config |
-| Analytics | Performance metrics |
-| Region | Region listing |
-| Tester | Tester device management |
+Single-column stacked layout -- branding collapses to a compact header above the form card.
+
+## Login Page Details
+
+### Form elements (right panel)
+
+1. **Header**: "Sign in to your account"
+2. **Email field** with inline validation
+3. **Password field** with show/hide toggle
+4. **Remember me** checkbox + **Forgot password?** link (same row)
+5. **Sign In** primary button
+6. **OR** divider
+7. **Continue with Google** button (outline, Google icon)
+8. **Continue with GitHub** button (outline, GitHub icon)
+9. **Sign in with SSO** button (outline, building icon)
+10. **Footer**: "Don't have an account? Sign up" | "Having trouble signing in?"
+
+### Password validation
+
+- Minimum 8 characters
+- Inline error messages on blur
+- Failed login shows toast (existing pattern)
+
+## Sign Up Page Details
+
+Same two-panel layout. Right panel form:
+
+1. **Header**: "Create your account"
+2. **Full Name** field
+3. **Work Email** field
+4. **Password** field with strength indicator (weak/fair/strong bar)
+5. **Confirm Password** field with match validation
+6. **Company Name** field (optional, labeled as such)
+7. **Terms checkbox**: "I agree to the Terms of Service and Privacy Policy"
+8. **Create Account** primary button
+9. **OR** divider
+10. **Continue with Google** / **Continue with GitHub**
+11. **Footer**: "Already have an account? Sign in"
+
+### Password strength indicator
+
+A small bar below the password field:
+- Red = weak (< 8 chars or no variety)
+- Yellow = fair (8+ chars, some variety)
+- Green = strong (8+ chars, upper + lower + number + special)
+
+## MFA Verification Page
+
+Centered single-card layout (no two-panel):
+
+1. **Header**: "Two-factor authentication"
+2. **Subtitle**: "Enter the 6-digit code from your authenticator app"
+3. **OTP input** (6 slots, using existing `InputOTP` component)
+4. **Verify** primary button
+5. **Link**: "Use a backup code instead" (toggles to a single text input)
+6. **Link**: "Back to sign in"
+
+## SSO Domain Flow
+
+Centered single-card layout:
+
+1. **Header**: "Enterprise SSO"
+2. **Subtitle**: "Enter your company email or domain"
+3. **Domain/email input** field
+4. **Continue with SSO** primary button
+5. **Back to sign in** link
+
+## Forgot Password Page
+
+Centered single-card layout:
+
+1. **Header**: "Reset your password"
+2. **Subtitle**: "Enter your email and we'll send a reset link"
+3. **Email input**
+4. **Send Reset Link** button
+5. **Success state**: Shows confirmation message, "Back to sign in" link
+6. **Back to sign in** link
+
+## Left Panel Content (Login + Sign Up)
+
+- **Logo**: "helo.ai" in semibold
+- **Subtitle**: "Developer Console"
+- **Tagline**: "Secure access to messaging infrastructure"
+- **Security indicators** (small icon + text rows):
+  - Shield icon -- "256-bit TLS encryption"
+  - Check icon -- "SOC 2 Type II compliant"
+  - Clock icon -- "99.99% uptime SLA"
+- **Theme toggle** in bottom-left corner
 
 ## Files Changed
 
-### 1. `src/data/rcsApis.ts` (NEW)
-
-Create new file mirroring `whatsappApis.ts` structure:
-- Export `RcsApi` type alias to the generic interface
-- Define all 38 raw APIs with: category, endpoint, method, requiredId, purpose, scope, classification, layer
-- Essential = `rcsbusinessmessaging` scope APIs; Advanced = `businesscommunications` scope APIs
-- Base URLs: `https://businesscommunications.googleapis.com` (management) and `https://rcsbusinessmessaging.googleapis.com` (runtime)
-
-### 2. `src/data/whatsappApis.ts` (MODIFY)
-
-- Rename `WhatsAppApi` interface to `MessagingApi` and keep `WhatsAppApi` as a type alias for backward compat
-- Export `MessagingApi` as the primary shared interface
-
-### 3. `src/components/ApiLineItem.tsx` (MODIFY)
-
-- Import `MessagingApi` instead of `WhatsAppApi`
-- Add PATCH method color: `bg-yellow-500/15 text-yellow-600 dark:text-yellow-400`
-- Add new RCS layer colors (Brand, Agent, Integration, etc.)
-- Update type references
-
-### 4. `src/components/CodeSample.tsx` (MODIFY)
-
-- Import `MessagingApi` instead of `WhatsAppApi`
-- Accept an optional `baseUrl` prop (defaults to WhatsApp URL for backward compat)
-- For RCS APIs, use the appropriate base URL based on scope
-- Replace `"messaging_product": "whatsapp"` with a generic POST body or scope-aware body
-
-### 5. `src/components/WhatsAppApiCatalog.tsx` (MODIFY)
-
-- Rename to a more generic `ApiCatalog` component (keep `WhatsAppApiCatalog` as re-export)
-- Accept `title` prop (e.g. "WhatsApp Messaging" vs "RCS Messaging")
-- Accept `baseUrl` prop to pass through to CodeSample
-- Accept `essentialLabel` and `advancedLabel` with sensible defaults
-
-### 6. `src/pages/ProductDetail.tsx` (MODIFY)
-
-- Import `rcsApis` from `src/data/rcsApis.ts`
-- Add an `rcs` branch alongside the existing `whatsapp` branch:
-  - Filter essential vs advanced RCS APIs
-  - Render the same `ApiCatalog` component with RCS title and data
-- Remove the old static `rcs` entry from `productConfigs` (it will use the catalog view now)
+| File | Change |
+|---|---|
+| `src/pages/Login.tsx` | Complete redesign with two-panel layout, social login buttons, SSO button, remember me, forgot password link |
+| `src/pages/SignUp.tsx` | **NEW** -- Sign-up form with password strength, terms checkbox, social auth |
+| `src/pages/MfaVerify.tsx` | **NEW** -- OTP entry using InputOTP component, backup code toggle |
+| `src/pages/ForgotPassword.tsx` | **NEW** -- Email input, success state |
+| `src/pages/SsoLogin.tsx` | **NEW** -- Domain input, continue button |
+| `src/components/AuthLayout.tsx` | **NEW** -- Shared two-panel layout wrapper for Login and SignUp |
+| `src/App.tsx` | Add routes for `/signup`, `/mfa`, `/forgot-password`, `/sso` (all wrapped in `PublicRoute`) |
+| `src/contexts/AppContext.tsx` | Extend `login()` to return `{ success, requiresMfa }` so the login page can redirect to `/mfa` when needed; add `signup()` method |
 
 ## Technical Details
 
-### RCS API Data Structure (sample entries)
+### AuthLayout component
 
 ```typescript
-{ category: "Send Agent Message", endpoint: "/v1/{parent=phones/*}/agentMessages", method: "POST", requiredId: "Phone ID", purpose: "Send RCS message to user", scope: "rcsbusinessmessaging", classification: "Essential", layer: "Messaging" }
-
-{ category: "Create Brand", endpoint: "/v1/brands", method: "POST", requiredId: "---", purpose: "Create a new brand", scope: "businesscommunications", classification: "Advanced", layer: "Brand" }
+interface AuthLayoutProps {
+  children: React.ReactNode;  // right panel content
+  title?: string;             // overrides left panel title
+}
 ```
 
-### Method Color Addition
+Renders the two-panel layout on `md:` breakpoint and above. On mobile, left panel collapses to a compact branded header.
+
+### Updated login flow
 
 ```typescript
-PATCH: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400"
+// AppContext login returns extended result
+login: (email, password) => Promise<{ success: boolean; requiresMfa: boolean }>
+
+// Login page handles:
+const result = await login(email, password);
+if (result.requiresMfa) navigate("/mfa");
+else if (result.success) navigate("/apps");
+
+// MFA mock: any 6-digit code succeeds
 ```
 
-### CodeSample Base URL Logic
+### Social login buttons (mock)
+
+Google and GitHub buttons will call `login()` directly with mock credentials (same as current mock auth). They are UI-ready for future real OAuth integration.
+
+### SSO flow (mock)
+
+Accepts any domain, shows a brief loading state, then calls `login()` with mock credentials. UI-ready for real SAML/OIDC integration.
+
+### Password strength logic
 
 ```typescript
-const baseUrl = props.baseUrl || (api.scope === "rcsbusinessmessaging" 
-  ? "https://rcsbusinessmessaging.googleapis.com" 
-  : "https://businesscommunications.googleapis.com");
+function getPasswordStrength(password: string): "weak" | "fair" | "strong" {
+  if (password.length < 8) return "weak";
+  const checks = [/[a-z]/, /[A-Z]/, /[0-9]/, /[^a-zA-Z0-9]/];
+  const passed = checks.filter(r => r.test(password)).length;
+  if (passed >= 3) return "strong";
+  if (passed >= 2) return "fair";
+  return "weak";
+}
 ```
+
+### Route additions in App.tsx
+
+```typescript
+<Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
+<Route path="/mfa" element={<PublicRoute><MfaVerify /></PublicRoute>} />
+<Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+<Route path="/sso" element={<PublicRoute><SsoLogin /></PublicRoute>} />
+```
+
+## Design Tokens
+
+All screens use existing CSS variables. The left panel uses a darker surface:
+- Light mode: `bg-gray-950 text-white`
+- Dark mode: `bg-gray-950 text-gray-300`
+
+This creates visual contrast with the form panel and communicates security.
 
