@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -14,13 +14,13 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { ShieldCheck, Code2, UserPlus, MoreHorizontal } from "lucide-react";
+import { ShieldCheck, Code2, FlaskConical, UserPlus, MoreHorizontal, HelpCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type AppRole = "admin" | "developer";
+type AppRole = "admin" | "developer" | "tester";
 type UserStatus = "active" | "pending";
 
 interface AppUser {
@@ -42,16 +42,42 @@ const ROLE_CONFIG: Record<AppRole, { label: string; icon: React.ElementType; cla
     icon: Code2,
     className: "bg-primary/10 text-primary border-primary/20",
   },
+  tester: {
+    label: "Tester",
+    icon: FlaskConical,
+    className: "bg-success/10 text-success border-success/20",
+  },
 };
+
+const ROLES_INFO = [
+  {
+    role: "Admin",
+    description: "Full control of the app lifecycle. Only role that can invite other users.",
+    scope: "All features: credentials, products, webhooks, settings, user management",
+  },
+  {
+    role: "Developer",
+    description: "Can manage products, webhooks, logs, and settings. Cannot modify credentials, app lifecycle, or invite users.",
+    scope: "Products, Webhooks, Logs, Settings (read-only credentials, no user invites)",
+  },
+  {
+    role: "Tester",
+    description: "Can view and test existing configurations. Cannot configure new products or change webhook/product API scope.",
+    scope: "Logs, read-only Products/Webhooks/Credentials/Settings",
+  },
+];
 
 const DEFAULT_USERS: AppUser[] = [
   { id: "1", name: "Soumik Choudhury", email: "soumik@helo.ai", role: "admin", status: "active" },
+  { id: "2", name: "Arjun Mehta", email: "arjun@helo.ai", role: "developer", status: "active" },
+  { id: "3", name: "Priya Sharma", email: "priya@helo.ai", role: "tester", status: "active" },
 ];
 
 export default function Users() {
   const { toast } = useToast();
   const [users, setUsers] = useState<AppUser[]>(DEFAULT_USERS);
   const [modalOpen, setModalOpen] = useState(false);
+  const [rolesModalOpen, setRolesModalOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<AppRole>("developer");
   const [submitting, setSubmitting] = useState(false);
@@ -86,9 +112,17 @@ export default function Users() {
   return (
     <DashboardLayout>
       <div className="flex items-center justify-between mb-8">
-        <div>
+        <div className="flex items-center gap-2">
           <h1 className="text-2xl font-semibold tracking-tight">Users</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage who has access to this app</p>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-muted-foreground hover:text-foreground"
+            onClick={() => setRolesModalOpen(true)}
+          >
+            <HelpCircle className="h-4 w-4" />
+          </Button>
+          <p className="text-sm text-muted-foreground hidden sm:block">Manage who has access to this app</p>
         </div>
         <Button size="sm" onClick={() => setModalOpen(true)} className="gap-2">
           <UserPlus className="h-4 w-4" />
@@ -205,6 +239,12 @@ export default function Users() {
                       Developer
                     </span>
                   </SelectItem>
+                  <SelectItem value="tester">
+                    <span className="flex items-center gap-2">
+                      <FlaskConical className="h-3.5 w-3.5 text-success" />
+                      Tester
+                    </span>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -217,6 +257,36 @@ export default function Users() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Roles & Permissions Modal */}
+      <Dialog open={rolesModalOpen} onOpenChange={setRolesModalOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Roles and Permissions</DialogTitle>
+            <DialogDescription>Overview of each role's capabilities within this app.</DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg border border-border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-28">Role</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Scope of Access</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {ROLES_INFO.map((r) => (
+                  <TableRow key={r.role}>
+                    <TableCell className="font-medium text-foreground">{r.role}</TableCell>
+                    <TableCell className="text-muted-foreground text-xs">{r.description}</TableCell>
+                    <TableCell className="text-muted-foreground text-xs">{r.scope}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </DialogContent>
       </Dialog>
     </DashboardLayout>
