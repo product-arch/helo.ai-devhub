@@ -64,10 +64,10 @@ const PRODUCT_ICON: Record<string, React.ComponentType<{ className?: string }>> 
 };
 
 const STATUS_BORDER: Record<string, string> = {
-  active: "border-l-success",
-  configured: "border-l-primary",
-  restricted: "border-l-warning",
-  disabled: "border-l-border",
+  active: "",
+  configured: "",
+  restricted: "",
+  disabled: "",
 };
 
 // All unique event groups for the filter
@@ -128,7 +128,7 @@ export default function Logs() {
             <div
               key={product.id}
               className={cn(
-                "rounded-lg border bg-card p-4 border-l-4 shadow-block",
+                "rounded-lg border bg-card p-4 shadow-block",
                 borderColor
               )}
             >
