@@ -41,7 +41,12 @@ export function AppSidebar() {
     <aside className={cn("fixed left-0 top-0 h-screen bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-200", collapsed ? "w-16" : "w-60")}>
       {/* Header */}
       <div className="h-14 flex items-center justify-between px-4 border-b border-sidebar-border">
-        {!collapsed && <span className="font-semibold text-sidebar-foreground tracking-tight">helo.ai</span>}
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-7 w-7 text-sidebar-foreground hover:bg-sidebar-accent">
+            {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+          </Button>
+          {!collapsed && <span className="font-semibold text-sidebar-foreground tracking-tight">helo.ai</span>}
+        </div>
         <Button variant="ghost" size="icon" onClick={() => setCollapsed(!collapsed)} className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent">
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </Button>
@@ -83,10 +88,7 @@ export function AppSidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="p-2 border-t border-sidebar-border space-y-1">
-        <Button variant="ghost" size="icon" onClick={toggleTheme} className={cn("h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent", !collapsed && "self-start ml-1")}>
-          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        </Button>
+      <div className="p-2 border-t border-sidebar-border">
         <Button variant="ghost" size="sm" onClick={logout} className={cn("w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent", collapsed && "justify-center px-2")}>
           <LogOut className="h-4 w-4" />
           {!collapsed && <span>Sign out</span>}

@@ -33,7 +33,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Button variant="ghost" size="icon" onClick={toggleTheme} className="absolute top-4 right-4">
+      <Button variant="ghost" size="icon" onClick={toggleTheme} className="absolute top-4 left-4">
         {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
       </Button>
       <Card className="w-full max-w-sm border-border">
