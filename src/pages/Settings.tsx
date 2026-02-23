@@ -379,7 +379,7 @@ export default function Settings() {
             title="API Credentials"
             description="Programmatic access keys for this app"
           >
-            <div className="rounded-md border border-border bg-muted/40 p-4 space-y-4">
+            <div className="rounded-md border border-border bg-muted/40 p-4 space-y-4 shadow-block">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-foreground mb-0.5">Primary API Key</p>

@@ -128,7 +128,7 @@ export default function Logs() {
             <div
               key={product.id}
               className={cn(
-                "rounded-lg border bg-card p-4 border-l-4",
+                "rounded-lg border bg-card p-4 border-l-4 shadow-block",
                 borderColor
               )}
             >
