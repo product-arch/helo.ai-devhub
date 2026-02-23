@@ -5,15 +5,21 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApiLineItem } from "@/components/ApiLineItem";
-import type { WhatsAppApi } from "@/data/whatsappApis";
+import type { MessagingApi } from "@/data/whatsappApis";
 import type { HeloApp, Product } from "@/contexts/AppContext";
 
 interface Props {
   app: HeloApp;
   appId: string;
   product: Product;
-  essentialApis: WhatsAppApi[];
-  advancedApis: WhatsAppApi[];
+  essentialApis: MessagingApi[];
+  advancedApis: MessagingApi[];
+  title?: string;
+  essentialLabel?: string;
+  essentialSubtitle?: string;
+  advancedLabel?: string;
+  advancedSubtitle?: string;
+  baseUrl?: string;
 }
 
 function SectionHeader({
@@ -47,19 +53,31 @@ function SectionHeader({
   );
 }
 
-export function WhatsAppApiCatalog({ app, appId, product, essentialApis, advancedApis }: Props) {
+export function ApiCatalog({
+  app,
+  appId,
+  product,
+  essentialApis,
+  advancedApis,
+  title = "WhatsApp Messaging",
+  essentialLabel = "Essential APIs",
+  essentialSubtitle = "Always active · Core capabilities included in all plans",
+  advancedLabel = "Advanced APIs",
+  advancedSubtitle = "Opt-in access · Enable per your integration requirements",
+  baseUrl,
+}: Props) {
   const [essentialOpen, setEssentialOpen] = useState(true);
   const [advancedOpen, setAdvancedOpen] = useState(true);
 
   return (
     <DashboardLayout>
       <PageHeader
-        title="WhatsApp Messaging"
+        title={title}
         breadcrumbs={[
           { label: "Apps", href: "/apps" },
           { label: app.name, href: `/apps/${appId}/overview` },
           { label: "Products", href: `/apps/${appId}/products` },
-          { label: "WhatsApp Messaging" },
+          { label: title },
         ]}
         actions={<StatusBadge status={product.status} />}
       />
@@ -69,29 +87,30 @@ export function WhatsAppApiCatalog({ app, appId, product, essentialApis, advance
           <CardTitle className="text-base">API Catalog</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {/* Essential section */}
           <SectionHeader
-            label="Essential APIs"
-            subtitle="Always active · Core capabilities included in all plans"
+            label={essentialLabel}
+            subtitle={essentialSubtitle}
             isOpen={essentialOpen}
             onToggle={() => setEssentialOpen((v) => !v)}
           />
           {essentialOpen && essentialApis.map((api) => (
-            <ApiLineItem key={api.id} api={api} isEssential />
+            <ApiLineItem key={api.id} api={api} isEssential baseUrl={baseUrl} />
           ))}
 
-          {/* Advanced section */}
           <SectionHeader
-            label="Advanced APIs"
-            subtitle="Opt-in access · Enable per your integration requirements"
+            label={advancedLabel}
+            subtitle={advancedSubtitle}
             isOpen={advancedOpen}
             onToggle={() => setAdvancedOpen((v) => !v)}
           />
           {advancedOpen && advancedApis.map((api) => (
-            <ApiLineItem key={api.id} api={api} />
+            <ApiLineItem key={api.id} api={api} baseUrl={baseUrl} />
           ))}
         </CardContent>
       </Card>
     </DashboardLayout>
   );
 }
+
+/** @deprecated Use ApiCatalog instead */
+export const WhatsAppApiCatalog = ApiCatalog;

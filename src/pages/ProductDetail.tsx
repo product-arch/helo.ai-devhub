@@ -15,7 +15,8 @@ import { Check, X, ExternalLink, Copy, Check as CheckIcon } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { whatsappApis } from "@/data/whatsappApis";
-import { WhatsAppApiCatalog } from "@/components/WhatsAppApiCatalog";
+import { rcsApis } from "@/data/rcsApis";
+import { ApiCatalog } from "@/components/WhatsAppApiCatalog";
 
 interface EndpointDef {
   id: string;
@@ -47,24 +48,6 @@ const productConfigs: Record<string, {
       { name: "DLT registration (India)", required: false, completed: false, source: "TRAI" },
     ],
   },
-  rcs: {
-    fields: [
-      { name: "agentId", label: "RCS Agent ID", placeholder: "your-agent-id", required: true },
-      { name: "verificationToken", label: "Verification Token", placeholder: "token-from-google", required: true },
-    ],
-    endpoints: [
-      { id: "rcs_send", method: "POST", path: "/v1/rcs/send", description: "Send an RCS message", capabilityId: "rcs_text" },
-      { id: "rcs_rich_card", method: "POST", path: "/v1/rcs/rich-card", description: "Send a rich card", capabilityId: "rcs_rich_card" },
-      { id: "rcs_carousel", method: "POST", path: "/v1/rcs/carousel", description: "Send a carousel", capabilityId: "rcs_carousel" },
-      { id: "rcs_status", method: "GET", path: "/v1/rcs/{messageId}", description: "Get message status", capabilityId: "rcs_text" },
-      { id: "rcs_file", method: "POST", path: "/v1/rcs/file", description: "Send a file", capabilityId: "rcs_file" },
-    ],
-    prerequisites: [
-      { name: "Account verification", required: true, completed: true, source: "Internal" },
-      { name: "Google RCS partner access", required: true, completed: true, source: "Google" },
-      { name: "Agent verification", required: true, completed: false, source: "Google" },
-    ],
-  },
 };
 
 export default function ProductDetail() {
@@ -84,12 +67,30 @@ export default function ProductDetail() {
     const advancedApis = whatsappApis.filter((a) => !a.isEssential);
 
     return (
-      <WhatsAppApiCatalog
+      <ApiCatalog
         app={app}
         appId={appId!}
         product={product}
         essentialApis={essentialApis}
         advancedApis={advancedApis}
+        title="WhatsApp Messaging"
+      />
+    );
+  }
+
+  // RCS gets the same API catalog view
+  if (productId === "rcs") {
+    const essentialApis = rcsApis.filter((a) => a.isEssential);
+    const advancedApis = rcsApis.filter((a) => !a.isEssential);
+
+    return (
+      <ApiCatalog
+        app={app}
+        appId={appId!}
+        product={product}
+        essentialApis={essentialApis}
+        advancedApis={advancedApis}
+        title="RCS Messaging"
       />
     );
   }

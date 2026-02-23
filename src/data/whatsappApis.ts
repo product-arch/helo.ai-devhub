@@ -1,4 +1,4 @@
-export interface WhatsAppApi {
+export interface MessagingApi {
   id: string;
   category: string;
   endpoint: string;
@@ -11,6 +11,9 @@ export interface WhatsAppApi {
   accessType: "toggle" | "request";
   isEssential: boolean;
 }
+
+/** @deprecated Use MessagingApi instead */
+export type WhatsAppApi = MessagingApi;
 
 // Seeded pseudo-random for consistent accessType on unclassified APIs
 function seededRandom(seed: number): number {

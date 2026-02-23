@@ -7,27 +7,42 @@ import { ChevronDown, Lock } from "lucide-react";
 import { CodeSample } from "@/components/CodeSample";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import type { WhatsAppApi } from "@/data/whatsappApis";
+import type { MessagingApi } from "@/data/whatsappApis";
 
 const methodColors: Record<string, string> = {
   GET: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
   POST: "bg-green-500/15 text-green-600 dark:text-green-400",
   DELETE: "bg-red-500/15 text-red-600 dark:text-red-400",
+  PATCH: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
   "GET/POST": "bg-purple-500/15 text-purple-600 dark:text-purple-400",
 };
 
 const layerColors: Record<string, string> = {
+  // WhatsApp layers
   WABA: "bg-accent text-accent-foreground",
   Phone: "bg-secondary text-secondary-foreground",
   Media: "bg-muted text-muted-foreground",
+  // RCS layers
+  Messaging: "bg-accent text-accent-foreground",
+  File: "bg-muted text-muted-foreground",
+  Brand: "bg-secondary text-secondary-foreground",
+  Agent: "bg-accent text-accent-foreground",
+  Integration: "bg-secondary text-secondary-foreground",
+  Partner: "bg-muted text-muted-foreground",
+  Analytics: "bg-accent text-accent-foreground",
+  Region: "bg-secondary text-secondary-foreground",
+  Tester: "bg-muted text-muted-foreground",
+  Dialogflow: "bg-accent text-accent-foreground",
+  User: "bg-secondary text-secondary-foreground",
 };
 
 interface ApiLineItemProps {
-  api: WhatsAppApi;
+  api: MessagingApi;
   isEssential?: boolean;
+  baseUrl?: string;
 }
 
-export function ApiLineItem({ api, isEssential = false }: ApiLineItemProps) {
+export function ApiLineItem({ api, isEssential = false, baseUrl }: ApiLineItemProps) {
   const [enabled, setEnabled] = useState(false);
   const [requested, setRequested] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -117,7 +132,7 @@ export function ApiLineItem({ api, isEssential = false }: ApiLineItemProps) {
 
         <CollapsibleContent>
           <div className="px-4 pb-4 pt-1">
-            <CodeSample api={api} />
+            <CodeSample api={api} baseUrl={baseUrl} />
           </div>
         </CollapsibleContent>
       </div>

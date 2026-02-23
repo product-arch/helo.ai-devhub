@@ -3,39 +3,53 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { WhatsAppApi } from "@/data/whatsappApis";
+import type { MessagingApi } from "@/data/whatsappApis";
 
-const BASE_URL = "https://graph.facebook.com/v24.0";
+const WHATSAPP_BASE_URL = "https://graph.facebook.com/v24.0";
 
-function generateCurl(api: WhatsAppApi): string {
-  const url = `${BASE_URL}${api.endpoint.replace(api.requiredId, `YOUR_${api.requiredId}`)}`;
+function getBaseUrl(api: MessagingApi, baseUrl?: string): string {
+  if (baseUrl) return baseUrl;
+  if (api.scope === "rcsbusinessmessaging") return "https://rcsbusinessmessaging.googleapis.com";
+  if (api.scope === "businesscommunications") return "https://businesscommunications.googleapis.com";
+  return WHATSAPP_BASE_URL;
+}
+
+function getPostBody(api: MessagingApi): string | null {
+  const method = api.method.includes("/") ? api.method.split("/")[0] : api.method;
+  if (method !== "POST") return null;
+  if (api.scope === "whatsapp_business_messaging" || api.scope === "whatsapp_business_management") {
+    return '{\n    "messaging_product": "whatsapp"\n  }';
+  }
+  return '{\n  }';
+}
+
+function generateCurl(api: MessagingApi, base: string): string {
+  const url = `${base}${api.endpoint}`;
   const method = api.method.includes("/") ? api.method.split("/")[0] : api.method;
   let cmd = `curl -X ${method} \\
   '${url}' \\
   -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \\
   -H 'Content-Type: application/json'`;
-  if (method === "POST") {
+  const body = getPostBody(api);
+  if (body) {
     cmd += ` \\
-  -d '{
-    "messaging_product": "whatsapp"
-  }'`;
+  -d '${body}'`;
   }
   return cmd;
 }
 
-function generatePython(api: WhatsAppApi): string {
-  const url = `${BASE_URL}${api.endpoint.replace(api.requiredId, `YOUR_${api.requiredId}`)}`;
+function generatePython(api: MessagingApi, base: string): string {
+  const url = `${base}${api.endpoint}`;
   const method = api.method.includes("/") ? api.method.split("/")[0].toLowerCase() : api.method.toLowerCase();
+  const body = getPostBody(api);
   return `import requests
 
 url = "${url}"
 headers = {
     "Authorization": "Bearer YOUR_ACCESS_TOKEN",
     "Content-Type": "application/json"
-}${method === "post" ? `
-payload = {
-    "messaging_product": "whatsapp"
-}
+}${body ? `
+payload = ${body.replace(/\n  /g, "\n")}
 
 response = requests.${method}(url, headers=headers, json=payload)` : `
 
@@ -43,27 +57,27 @@ response = requests.${method}(url, headers=headers)`}
 print(response.json())`;
 }
 
-function generateNode(api: WhatsAppApi): string {
-  const url = `${BASE_URL}${api.endpoint.replace(api.requiredId, `YOUR_${api.requiredId}`)}`;
+function generateNode(api: MessagingApi, base: string): string {
+  const url = `${base}${api.endpoint}`;
   const method = api.method.includes("/") ? api.method.split("/")[0] : api.method;
+  const body = getPostBody(api);
   return `const response = await fetch("${url}", {
   method: "${method}",
   headers: {
     "Authorization": "Bearer YOUR_ACCESS_TOKEN",
     "Content-Type": "application/json",
-  },${method === "POST" ? `
-  body: JSON.stringify({
-    messaging_product: "whatsapp",
-  }),` : ""}
+  },${body ? `
+  body: JSON.stringify(${body.replace(/\n  /g, "\n")}),` : ""}
 });
 
 const data = await response.json();
 console.log(data);`;
 }
 
-function generatePhp(api: WhatsAppApi): string {
-  const url = `${BASE_URL}${api.endpoint.replace(api.requiredId, `YOUR_${api.requiredId}`)}`;
+function generatePhp(api: MessagingApi, base: string): string {
+  const url = `${base}${api.endpoint}`;
   const method = api.method.includes("/") ? api.method.split("/")[0] : api.method;
+  const body = getPostBody(api);
   return `<?php
 $ch = curl_init();
 curl_setopt($ch, CURLOPT_URL, "${url}");
@@ -72,10 +86,8 @@ curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "${method}");
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
     "Authorization: Bearer YOUR_ACCESS_TOKEN",
     "Content-Type: application/json",
-]);${method === "POST" ? `
-curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
-    "messaging_product" => "whatsapp",
-]));` : ""}
+]);${body ? `
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(${body.replace(/\n  /g, "\n")}));` : ""}
 
 $response = curl_exec($ch);
 curl_close($ch);
@@ -83,18 +95,20 @@ echo $response;`;
 }
 
 interface CodeSampleProps {
-  api: WhatsAppApi;
+  api: MessagingApi;
+  baseUrl?: string;
 }
 
-export function CodeSample({ api }: CodeSampleProps) {
+export function CodeSample({ api, baseUrl }: CodeSampleProps) {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
+  const base = getBaseUrl(api, baseUrl);
 
   const samples: Record<string, string> = {
-    curl: generateCurl(api),
-    python: generatePython(api),
-    nodejs: generateNode(api),
-    php: generatePhp(api),
+    curl: generateCurl(api, base),
+    python: generatePython(api, base),
+    nodejs: generateNode(api, base),
+    php: generatePhp(api, base),
   };
 
   const [activeTab, setActiveTab] = useState("curl");
@@ -112,7 +126,7 @@ export function CodeSample({ api }: CodeSampleProps) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
         <div>
           <span className="text-muted-foreground">Base URL:</span>
-          <code className="ml-2 font-mono text-xs bg-muted px-2 py-0.5 rounded">{BASE_URL}</code>
+          <code className="ml-2 font-mono text-xs bg-muted px-2 py-0.5 rounded">{base}</code>
         </div>
         <div>
           <span className="text-muted-foreground">Scope:</span>
