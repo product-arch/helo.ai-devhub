@@ -130,7 +130,7 @@ export default function Users() {
         </Button>
       </div>
 
-      <div className="mt-6 rounded-lg border border-border bg-card overflow-hidden">
+      <div className="mt-6 rounded-lg border border-border bg-card overflow-hidden shadow-block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -267,7 +267,7 @@ export default function Users() {
             <DialogTitle>Roles and Permissions</DialogTitle>
             <DialogDescription>Overview of each role's capabilities within this app.</DialogDescription>
           </DialogHeader>
-          <div className="rounded-lg border border-border overflow-hidden">
+          <div className="rounded-lg border border-border overflow-hidden shadow-block">
             <Table>
               <TableHeader>
                 <TableRow>
