@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Smartphone, MessageCircle, Webhook } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   MessageSquare, Smartphone, MessageCircle, Webhook,
@@ -13,7 +14,8 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 
 export default function Products() {
   const { appId } = useParams<{ appId: string }>();
-  const { apps } = useApp();
+  const { apps, updateProduct } = useApp();
+  const { toast } = useToast();
   const app = apps.find((a) => a.id === appId);
 
   if (!app) return <Navigate to="/apps" replace />;
@@ -36,11 +38,20 @@ export default function Products() {
                     </div>
                     <p className="text-sm text-muted-foreground mb-4">{product.description}</p>
                     {product.blockingReason && <p className="text-xs text-warning mb-3">⚠ {product.blockingReason}</p>}
-                    <Button variant={product.status === "disabled" ? "default" : "outline"} size="sm" asChild>
-                      <Link to={`/apps/${appId}/products/${product.id}`}>
-                        {product.status === "disabled" ? "Setup" : "View Details"}
-                      </Link>
-                    </Button>
+                    {product.status === "disabled" ? (
+                      <Button variant="default" size="sm" onClick={() => {
+                        updateProduct(appId!, product.id, { status: "configured" });
+                        toast({ title: "Product enabled", description: `${product.name} has been enabled.` });
+                      }}>
+                        Setup
+                      </Button>
+                    ) : (
+                      <Button variant="outline" size="sm" asChild>
+                        <Link to={`/apps/${appId}/products/${product.id}`}>
+                          View Details
+                        </Link>
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>
