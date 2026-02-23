@@ -120,7 +120,7 @@ export default function Credentials() {
 
   const isProduction = app.environment === "production";
   const maskedKey = app.apiKey.slice(0, 10) + "••••••••••••••••••••";
-  const keyId = `key_${app.environment === "production" ? "prod" : "stg"}_${app.id.slice(-3)}`;
+  const keyId = `app_${app.environment === "production" ? "prod" : "stg"}_${app.id.slice(-3)}`;
   const baseUrl = isProduction ? "https://api.helo.ai" : "https://sandbox.helo.ai";
 
   const copyApiKey = () => {
@@ -204,7 +204,7 @@ export default function Credentials() {
             {/* Metadata grid */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
               <div>
-                <p className="text-muted-foreground text-xs mb-1">Key ID</p>
+                <p className="text-muted-foreground text-xs mb-1">App ID</p>
                 <p className="font-mono">{keyId}</p>
               </div>
               <div>
