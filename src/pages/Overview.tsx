@@ -109,8 +109,7 @@ export default function Overview() {
       {/* Section 1: App Status Header */}
       <div
         className={cn(
-          "flex flex-wrap items-center gap-6 p-4 rounded-lg bg-muted/30 mb-8",
-          isProduction && "border-l-4 border-l-amber-500"
+          "flex flex-wrap items-center gap-6 p-4 rounded-lg bg-muted/30 mb-8"
         )}
       >
         <div className="flex flex-col gap-1">

@@ -186,7 +186,7 @@ export default function Credentials() {
         )}
 
         {/* ── Section 1: Credential Overview ── */}
-        <Card className={isProduction ? "border-l-4 border-l-amber-500" : ""}>
+        <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
