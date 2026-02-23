@@ -6,6 +6,10 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AppProvider, useApp } from "@/contexts/AppContext";
 import Login from "./pages/Login";
+import SignUp from "./pages/SignUp";
+import MfaVerify from "./pages/MfaVerify";
+import ForgotPassword from "./pages/ForgotPassword";
+import SsoLogin from "./pages/SsoLogin";
 import Apps from "./pages/Apps";
 import Overview from "./pages/Overview";
 import Products from "./pages/Products";
@@ -36,6 +40,10 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+      <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
+      <Route path="/mfa" element={<PublicRoute><MfaVerify /></PublicRoute>} />
+      <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+      <Route path="/sso" element={<PublicRoute><SsoLogin /></PublicRoute>} />
       <Route path="/apps" element={<ProtectedRoute><Apps /></ProtectedRoute>} />
       <Route path="/apps/:appId/overview" element={<ProtectedRoute><Overview /></ProtectedRoute>} />
       <Route path="/apps/:appId/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
