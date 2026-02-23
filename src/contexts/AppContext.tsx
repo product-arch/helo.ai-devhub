@@ -83,6 +83,8 @@ interface AppContextType extends AppState {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   createApp: (name: string, email: string, environment: AppEnvironment, description: string, invitedDevelopers: string[]) => void;
+  deleteApp: (appId: string) => void;
+  duplicateApp: (appId: string) => void;
   selectApp: (appId: string) => void;
   currentApp: HeloApp | null;
   rotateApiKey: (appId: string) => void;
@@ -262,6 +264,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const selectApp = (appId: string) => setState((prev) => ({ ...prev, currentAppId: appId }));
 
+  const deleteApp = (appId: string) => {
+    setState((prev) => ({
+      ...prev,
+      apps: prev.apps.filter((a) => a.id !== appId),
+      currentAppId: prev.currentAppId === appId ? null : prev.currentAppId,
+    }));
+  };
+
+  const duplicateApp = (appId: string) => {
+    setState((prev) => {
+      const source = prev.apps.find((a) => a.id === appId);
+      if (!source) return prev;
+      const newApp: HeloApp = {
+        ...source,
+        id: `app_${generateId()}`,
+        name: `${source.name} (Copy)`,
+        apiKey: generateApiKey(),
+        webhookEvents: [],
+        logEvents: [],
+      };
+      return { ...prev, apps: [...prev.apps, newApp] };
+    });
+  };
+
   const updateAppField = (appId: string, updater: (app: HeloApp) => HeloApp) => {
     setState((prev) => ({ ...prev, apps: prev.apps.map((a) => (a.id === appId ? updater(a) : a)) }));
   };
@@ -313,7 +339,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       value={{
         ...state,
         currentApp,
-        login, logout, createApp, selectApp,
+        login, logout, createApp, deleteApp, duplicateApp, selectApp,
         rotateApiKey, updateProduct, setWebhookUrl,
         toggleCapability, requestCapabilityAccess,
         updateAccountName, updateTimezone,

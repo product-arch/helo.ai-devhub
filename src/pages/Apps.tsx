@@ -13,15 +13,21 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Box, AlertTriangle, CheckCircle2, ShieldCheck } from "lucide-react";
+import { Plus, Box, AlertTriangle, CheckCircle2, ShieldCheck, MoreVertical, Trash2, Copy, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Moon, Sun, LogOut } from "lucide-react";
 import { EmailTagInput, InvitedUser } from "@/components/EmailTagInput";
 
 export default function Apps() {
-  const { apps, createApp, selectApp, logout, accountName } = useApp();
+  const { apps, createApp, deleteApp, duplicateApp, selectApp, logout, accountName } = useApp();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -31,6 +37,8 @@ export default function Apps() {
   const [newEnv, setNewEnv] = useState<AppEnvironment>("production");
   const [newDescription, setNewDescription] = useState("");
   const [invitedUsers, setInvitedUsers] = useState<InvitedUser[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [deleteAppId, setDeleteAppId] = useState<string | null>(null);
 
   const handleCreate = () => {
     if (!newName.trim() || !newEmail.trim()) return;
@@ -48,6 +56,26 @@ export default function Apps() {
     selectApp(appId);
     navigate(`/apps/${appId}/overview`);
   };
+
+  const handleDeleteApp = () => {
+    if (!deleteAppId) return;
+    const app = apps.find(a => a.id === deleteAppId);
+    deleteApp(deleteAppId);
+    toast({ title: "App deleted", description: `${app?.name} has been deleted.` });
+    setDeleteAppId(null);
+  };
+
+  const handleDuplicateApp = (appId: string) => {
+    duplicateApp(appId);
+    const app = apps.find(a => a.id === appId);
+    toast({ title: "App duplicated", description: `${app?.name} has been duplicated.` });
+  };
+
+  const filteredApps = apps.filter((app) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return app.name.toLowerCase().includes(q) || app.id.toLowerCase().includes(q);
+  });
 
   const envColors: Record<AppEnvironment, string> = {
     production: "bg-success/10 text-success border-success/20",
@@ -71,7 +99,7 @@ export default function Apps() {
       </header>
 
       <main className="max-w-4xl mx-auto p-8">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-semibold tracking-tight">Apps</h1>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -119,8 +147,19 @@ export default function Apps() {
           </Dialog>
         </div>
 
+        {/* Search / Filter */}
+        <div className="relative mb-6">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by app name or app ID..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+
         <div className="grid gap-4 md:grid-cols-2">
-          {apps.map((app) => {
+          {filteredApps.map((app) => {
             const enabledCount = app.products.filter((p) => p.status !== "disabled").length;
             return (
               <Card key={app.id} className="hover:border-foreground/20 transition-colors cursor-pointer" onClick={() => handleSelectApp(app.id)}>
@@ -132,6 +171,7 @@ export default function Apps() {
                       </div>
                       <div>
                         <h3 className="font-medium">{app.name}</h3>
+                        <p className="text-[11px] font-mono text-muted-foreground mt-0.5">{app.id}</p>
                         {app.description && (
                           <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{app.description}</p>
                         )}
@@ -140,16 +180,43 @@ export default function Apps() {
                         </Badge>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1.5 shrink-0">
-                      {app.status === "healthy" ? (
-                        <CheckCircle2 className="h-4 w-4 text-success" />
-                      ) : (
-                        <AlertTriangle className="h-4 w-4 text-warning" />
-                      )}
-                      <Badge variant="outline" className="flex items-center gap-1 text-[10px] bg-warning/10 text-warning border-warning/20">
-                        <ShieldCheck className="h-3 w-3" />
-                        Admin
-                      </Badge>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex flex-col items-end gap-1.5 mr-1">
+                        {app.status === "healthy" ? (
+                          <CheckCircle2 className="h-4 w-4 text-success" />
+                        ) : (
+                          <AlertTriangle className="h-4 w-4 text-warning" />
+                        )}
+                        <Badge variant="outline" className="flex items-center gap-1 text-[10px] bg-warning/10 text-warning border-warning/20">
+                          <ShieldCheck className="h-3 w-3" />
+                          Admin
+                        </Badge>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenuItem onClick={() => handleDuplicateApp(app.id)}>
+                            <Copy className="h-4 w-4 mr-2" />
+                            Duplicate App
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => setDeleteAppId(app.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete App
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
@@ -160,8 +227,31 @@ export default function Apps() {
               </Card>
             );
           })}
+          {filteredApps.length === 0 && (
+            <div className="col-span-full text-center py-12 text-muted-foreground">
+              No apps match your search.
+            </div>
+          )}
         </div>
       </main>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteAppId} onOpenChange={(open) => !open && setDeleteAppId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete App</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <span className="font-medium text-foreground">{apps.find(a => a.id === deleteAppId)?.name}</span> and all associated data. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteApp} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
