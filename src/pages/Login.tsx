@@ -164,10 +164,6 @@ export default function Login() {
             <GoogleIcon className="h-4 w-4 mr-2" />
             Continue with Google
           </Button>
-          <Button variant="outline" className="w-full" onClick={() => handleSocialLogin("GitHub")} disabled={isLoading}>
-            <GitHubIcon className="h-4 w-4 mr-2" />
-            Continue with GitHub
-          </Button>
           <Button variant="outline" className="w-full" asChild>
             <Link to="/sso">
               <Building2 className="h-4 w-4 mr-2" />
