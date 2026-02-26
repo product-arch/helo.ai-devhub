@@ -1,57 +1,63 @@
 
 
-# Dithered Background for Auth Left Panel
+# Sidebar Text Format Improvements
 
-## Overview
+## What Changes
 
-Replace the flat `bg-gray-950` background on the left panel of the Login and Sign Up pages with a CSS-based dithered pattern using black and grey gradients. The effect will mimic the retro halftone/dither aesthetic from the reference image while keeping all text content readable.
+Based on the reference image, the sidebar navigation items should be organized into labeled groups with uppercase section headers, matching the grouped structure shown. The current flat list of nav items will be split into groups with section labels.
 
-## Approach
+Mapping existing items to groups based on the reference:
 
-Create the dither effect using pure CSS -- layered radial gradients with small dot patterns at varying sizes and opacities, combined with a dark base. No images or canvas needed.
+**OVERVIEW** (uppercase label)
+- Dashboard (currently "Overview") → keep as "Overview" since that's the existing route
+- Products
+
+**DEVELOPER** (uppercase label)
+- API Credentials (maps to "Auth & API Keys")
+- Webhooks
+- Logs & Events (maps to "Logs")
+
+**SETTINGS** (uppercase label)
+- Settings (maps to "Configuration")
+- Users (maps to "Users & Permissions")
 
 ## File Changes
 
-### 1. `src/index.css` -- Add dither utility class
+### `src/components/layout/AppSidebar.tsx`
 
-Add a `.dither-bg` utility class that layers multiple tiny radial-gradient dot patterns at different scales and opacities to simulate a dithered texture:
-
-```css
-.dither-bg {
-  background-color: #0a0a0a;
-  background-image:
-    radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px),
-    radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px),
-    radial-gradient(circle, rgba(255,255,255,0.09) 1px, transparent 1px),
-    radial-gradient(ellipse at 30% 40%, rgba(120,120,120,0.15) 0%, transparent 50%),
-    radial-gradient(ellipse at 70% 60%, rgba(80,80,80,0.12) 0%, transparent 50%);
-  background-size:
-    4px 4px,
-    6px 6px,
-    3px 3px,
-    100% 100%,
-    100% 100%;
-  background-position:
-    0 0,
-    2px 2px,
-    1px 1px,
-    0 0,
-    0 0;
-}
+1. Replace the flat `navItems` array with grouped sections:
+```typescript
+const navGroups = [
+  {
+    label: "OVERVIEW",
+    items: [
+      { title: "Overview", url: `${prefix}/overview`, icon: LayoutDashboard },
+      { title: "Products", url: `${prefix}/products`, icon: Box },
+    ],
+  },
+  {
+    label: "DEVELOPER",
+    items: [
+      { title: "API Credentials", url: `${prefix}/credentials`, icon: Key },
+      { title: "Webhooks", url: `${prefix}/webhooks`, icon: Webhook },
+      { title: "Logs & Events", url: `${prefix}/logs`, icon: ScrollText },
+    ],
+  },
+  {
+    label: "SETTINGS",
+    items: [
+      { title: "Settings", url: `${prefix}/settings`, icon: Settings },
+      { title: "Users", url: `${prefix}/users`, icon: Users },
+    ],
+  },
+];
 ```
 
-The small dot layers (3-6px) create the halftone dither texture. The large elliptical gradients add subtle grey "cloud" shapes similar to the organic blobs in the reference. The base color stays very dark (`#0a0a0a`) so white text remains highly readable.
+2. Update the `<nav>` section to render groups with uppercase labels and spaced sections. Each group gets:
+   - A small uppercase label in muted color (`text-[11px] font-semibold tracking-wider text-muted-foreground uppercase`)
+   - Nav items beneath with slightly larger spacing between groups (`space-y-6` between groups, `space-y-1` within)
 
-### 2. `src/components/AuthLayout.tsx` -- Apply dither class to left panel
+3. In collapsed mode, hide the group labels (same as hiding text today).
 
-Replace `bg-gray-950` on the desktop left panel div with `dither-bg`. The mobile header gets the same treatment.
-
-- Desktop panel: change `bg-gray-950` to `dither-bg`
-- Mobile header: change `bg-gray-950` to `dither-bg`
-
-All text remains white/grey as-is -- the dither is subtle enough to preserve full readability of the branding, tagline, and security indicators.
-
-## Visual Result
-
-The left panel will show a dark background with a fine-grained dot texture and subtle grey gradient blobs, creating depth and visual interest while maintaining the security-first, infrastructure aesthetic. Text contrast stays high since the pattern uses very low-opacity white/grey dots on a near-black base.
+No other files changed. All routing, layout, auth pages, and previous implementations remain exactly as-is.
 
