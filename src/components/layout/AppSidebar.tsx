@@ -21,14 +21,29 @@ export function AppSidebar() {
   const currentApp = apps.find((a) => a.id === appId);
   const prefix = `/apps/${appId}`;
 
-  const navItems = [
-    { title: "Overview", url: `${prefix}/overview`, icon: LayoutDashboard },
-    { title: "Products", url: `${prefix}/products`, icon: Box },
-    { title: "API Credentials", url: `${prefix}/credentials`, icon: Key },
-    { title: "Webhooks", url: `${prefix}/webhooks`, icon: Webhook },
-    { title: "Logs & Events", url: `${prefix}/logs`, icon: ScrollText },
-    { title: "Settings", url: `${prefix}/settings`, icon: Settings },
-    { title: "Users", url: `${prefix}/users`, icon: Users },
+  const navGroups = [
+    {
+      label: "OVERVIEW",
+      items: [
+        { title: "Overview", url: `${prefix}/overview`, icon: LayoutDashboard },
+        { title: "Products", url: `${prefix}/products`, icon: Box },
+      ],
+    },
+    {
+      label: "DEVELOPER",
+      items: [
+        { title: "API Credentials", url: `${prefix}/credentials`, icon: Key },
+        { title: "Webhooks", url: `${prefix}/webhooks`, icon: Webhook },
+        { title: "Logs & Events", url: `${prefix}/logs`, icon: ScrollText },
+      ],
+    },
+    {
+      label: "SETTINGS",
+      items: [
+        { title: "Settings", url: `${prefix}/settings`, icon: Settings },
+        { title: "Users", url: `${prefix}/users`, icon: Users },
+      ],
+    },
   ];
 
   const envColors: Record<string, string> = {
@@ -73,17 +88,28 @@ export function AppSidebar() {
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.url}
-            to={item.url}
-            className={cn("flex items-center gap-3 px-3 py-2 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors", collapsed && "justify-center px-2")}
-            activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-          >
-            <item.icon className="h-4 w-4 shrink-0" />
-            {!collapsed && <span>{item.title}</span>}
-          </NavLink>
+      <nav className="flex-1 py-4 px-2 space-y-6 overflow-y-auto">
+        {navGroups.map((group) => (
+          <div key={group.label}>
+            {!collapsed && (
+              <p className="px-3 mb-2 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                {group.label}
+              </p>
+            )}
+            <div className="space-y-1">
+              {group.items.map((item) => (
+                <NavLink
+                  key={item.url}
+                  to={item.url}
+                  className={cn("flex items-center gap-3 px-3 py-2 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors", collapsed && "justify-center px-2")}
+                  activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                >
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  {!collapsed && <span>{item.title}</span>}
+                </NavLink>
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
 
