@@ -42,6 +42,22 @@
 
     --radius: 0.5rem;
 
+    /* Typography scale */
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-lg: 2.5rem;
+    --text-xl: 3rem;
+    --text-2xl: 3.5rem;
+    --text-caption: 0.75rem;
+    --text-badge: 0.875rem;
+
+    /* Font weights */
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semi-bold: 600;
+    --font-weight-bold: 700;
+
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
