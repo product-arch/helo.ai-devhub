@@ -1,0 +1,212 @@
+# Design System Quick Reference for AI Agents
+
+## 🚨 CRITICAL RULES
+
+1. **NEVER hardcode colors** - Always use semantic color classes (`bg-primary`, `text-foreground`, etc.)
+2. **NEVER use Tailwind text size/weight classes** - Let semantic HTML handle typography (`<h1>`, `<p>`, etc.)
+3. **ONLY use 'Inter' font family** - Already set globally, don't override
+4. **ALWAYS use pre-built components** from `/src/app/components/ui/` - Don't build from scratch
+5. **ALWAYS use CSS variables** - Enables users to customize via `/src/styles/theme.css`
+
+---
+
+## Color Classes Reference
+
+```tsx
+// Backgrounds & Text
+bg-background          // Main app background
+text-foreground        // Main text color
+bg-card                // Card backgrounds
+bg-popover             // Dropdown backgrounds
+
+// Actions
+bg-primary text-primary-foreground           // Primary buttons/actions
+bg-secondary text-secondary-foreground       // Secondary actions
+bg-destructive text-destructive-foreground   // Delete/dangerous actions
+
+// States
+bg-muted text-muted-foreground    // Disabled/subtle
+bg-accent text-accent-foreground  // Hover/highlights
+border-border                     // Borders
+ring-ring                         // Focus rings
+
+// Charts
+bg-chart-1 to bg-chart-5          // Chart colors
+```
+
+---
+
+## Typography Rules
+
+```tsx
+// ✅ DO THIS - Use semantic HTML
+<h1>Heading 1</h1>      // 56px, Bold, Inter - automatic
+<h2>Heading 2</h2>      // 48px, Bold, Inter - automatic
+<h3>Heading 3</h3>      // 40px, Bold, Inter - automatic
+<h4>Heading 4</h4>      // 32px, Semi-Bold, Inter - automatic
+<p>Body text</p>        // 16px, Normal, Inter - automatic
+<label>Label</label>    // 14px, Semi-Bold, Inter - automatic
+<button>Button</button> // 16px, Medium, Inter - automatic
+
+// If you need CSS variables:
+style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-weight-bold)' }}
+
+// ❌ DON'T DO THIS
+<h1 className="text-4xl font-bold">  // Wrong - removes design system
+<p className="text-sm">               // Wrong - use semantic HTML
+```
+
+---
+
+## Component Imports
+
+```tsx
+// Buttons
+import { Button } from './components/ui/button'
+<Button>Default</Button>
+<Button variant="secondary | outline | ghost | destructive | link">
+<Button size="sm | default | lg | icon">
+
+// Cards
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './components/ui/card'
+
+// Forms
+import { Input } from './components/ui/input'
+import { Label } from './components/ui/label'
+import { Checkbox } from './components/ui/checkbox'
+import { Switch } from './components/ui/switch'
+import { Select } from './components/ui/select'
+
+// Feedback
+import { Badge } from './components/ui/badge'
+import { Alert, AlertTitle, AlertDescription } from './components/ui/alert'
+import { Progress } from './components/ui/progress'
+import { Skeleton } from './components/ui/skeleton'
+
+// Navigation
+import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs'
+import { Separator } from './components/ui/separator'
+
+// Overlays
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './components/ui/dialog'
+import { Popover, PopoverTrigger, PopoverContent } from './components/ui/popover'
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from './components/ui/tooltip'
+```
+
+---
+
+## Spacing & Layout
+
+```tsx
+// Use Tailwind spacing classes normally
+<div className="p-6">            // padding
+<div className="m-4">            // margin
+<div className="gap-4">          // gap in flex/grid
+<div className="space-y-4">     // vertical spacing
+
+// Border radius
+<div className="rounded-lg">    // Default 8px
+<div className="rounded-md">    // 6px
+<div className="rounded-sm">    // 4px
+<div className="rounded-xl">    // 12px
+```
+
+---
+
+## Complete Example
+
+```tsx
+import { Button } from './components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
+import { Input } from './components/ui/input'
+import { Label } from './components/ui/label'
+
+export default function Example() {
+  return (
+    <div className="min-h-screen bg-background p-6">
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div>
+          <h1>Page Title</h1>
+          <p className="text-muted-foreground">Description text</p>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Card Title</CardTitle>
+            <CardDescription>Card description</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="field">Label</Label>
+              <Input id="field" placeholder="Enter text" />
+            </div>
+            
+            <div className="flex gap-3">
+              <Button>Primary Action</Button>
+              <Button variant="outline">Secondary</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+```
+
+---
+
+## CSS Variables (for direct use)
+
+```tsx
+// When you need direct access to design tokens:
+style={{
+  backgroundColor: 'var(--primary)',
+  color: 'var(--primary-foreground)',
+  fontSize: 'var(--text-base)',
+  fontWeight: 'var(--font-weight-medium)',
+  borderRadius: 'var(--radius)',
+  fontFamily: "'Inter', sans-serif"
+}}
+```
+
+---
+
+## ❌ Common Mistakes
+
+```tsx
+// ❌ DON'T hardcode colors
+<div className="bg-blue-500 text-white">
+
+// ✅ DO use semantic classes
+<div className="bg-primary text-primary-foreground">
+
+// ❌ DON'T override typography
+<h1 className="text-4xl font-bold">
+
+// ✅ DO use semantic HTML
+<h1>Heading</h1>
+
+// ❌ DON'T build components manually
+<button className="px-4 py-2 bg-blue-500 rounded">
+
+// ✅ DO use design system components
+<Button>Click</Button>
+
+// ❌ DON'T use wrong fonts
+<p style={{ fontFamily: 'Arial' }}>
+
+// ✅ DO use Inter (already default)
+<p>Text</p>
+```
+
+---
+
+## File Locations
+
+- **Design Tokens**: `/src/styles/theme.css` (users edit this to customize)
+- **UI Components**: `/src/app/components/ui/*` (import these)
+- **Main App**: `/src/app/App.tsx`
+
+---
+
+**Remember**: By using CSS variables and semantic classes, users can customize the entire design system by editing `/src/styles/theme.css` without touching component code.

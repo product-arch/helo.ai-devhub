@@ -1,0 +1,595 @@
+# Design System Instructions for AI Agents
+
+This document provides comprehensive instructions for generating UI components that adhere to our design system. All design tokens are defined in `/src/styles/theme.css` and must be referenced through CSS variables or Tailwind CSS classes.
+
+---
+
+## 🎨 Color System
+
+### Available Color Tokens
+
+All colors are defined as CSS variables and exposed as Tailwind classes. **ALWAYS use these semantic color tokens instead of hardcoded colors.**
+
+#### Usage Pattern
+```tsx
+// ✅ CORRECT - Use Tailwind classes that reference CSS variables
+<div className="bg-primary text-primary-foreground">Primary Action</div>
+<div className="bg-secondary text-secondary-foreground">Secondary Action</div>
+<div className="border border-border">Container</div>
+
+// ❌ INCORRECT - Never hardcode colors
+<div className="bg-blue-500 text-white">Action</div>
+<div style={{ backgroundColor: '#3186DF' }}>Action</div>
+```
+
+#### Primary & Secondary Colors
+- `bg-primary` / `text-primary` - Primary brand color (rgba(49, 134, 223, 1))
+- `text-primary-foreground` - Text on primary backgrounds (rgba(255, 255, 255, 1))
+- `bg-secondary` / `text-secondary` - Secondary actions (rgba(255, 255, 255, 1))
+- `text-secondary-foreground` - Text on secondary backgrounds (rgba(20, 24, 27, 1))
+
+#### Surface Colors
+- `bg-background` - Main application background (rgba(255, 255, 255, 1))
+- `text-foreground` - Main text color (rgba(20, 24, 27, 1))
+- `bg-card` - Card/container backgrounds (rgba(255, 255, 255, 1))
+- `text-card-foreground` - Text on cards (rgba(20, 24, 27, 1))
+- `bg-popover` - Dropdown/tooltip backgrounds (rgba(255, 255, 255, 1))
+- `text-popover-foreground` - Text in dropdowns (rgba(20, 24, 27, 1))
+
+#### State Colors
+- `bg-muted` / `text-muted` - Disabled/subtle backgrounds (rgba(242, 243, 243, 1))
+- `text-muted-foreground` - Secondary text (rgba(103, 110, 115, 1))
+- `bg-accent` / `text-accent` - Highlights/hover states (rgba(240, 248, 254, 1))
+- `text-accent-foreground` - Text on accents (rgba(49, 134, 223, 1))
+- `bg-destructive` - Destructive actions (rgba(237, 28, 52, 1))
+- `text-destructive-foreground` - Text on destructive (rgba(255, 255, 255, 1))
+
+#### UI Element Colors
+- `border-border` - Default borders (rgba(206, 209, 211, 1))
+- `bg-input` - Input field backgrounds (rgba(255, 255, 255, 1))
+- `bg-input-background` - Input backgrounds (rgba(255, 255, 255, 1))
+- `ring-ring` - Focus ring color (rgba(49, 134, 223, 1))
+
+#### Chart Colors
+- `bg-chart-1` / `fill-chart-1` / `stroke-chart-1` - rgba(49, 134, 223, 1)
+- `bg-chart-2` / `fill-chart-2` / `stroke-chart-2` - rgba(32, 176, 56, 1)
+- `bg-chart-3` / `fill-chart-3` / `stroke-chart-3` - rgba(237, 28, 52, 1)
+- `bg-chart-4` / `fill-chart-4` / `stroke-chart-4` - rgba(214, 90, 9, 1)
+- `bg-chart-5` / `fill-chart-5` / `stroke-chart-5` - rgba(130, 137, 142, 1)
+
+#### Sidebar Colors
+- `bg-sidebar` - Sidebar background (rgba(255, 255, 255, 1))
+- `text-sidebar-foreground` - Sidebar text (rgba(75, 79, 83, 1))
+- `bg-sidebar-primary` - Sidebar primary (rgba(49, 134, 223, 1))
+- `text-sidebar-primary-foreground` - Sidebar primary text (rgba(255, 255, 255, 1))
+- `bg-sidebar-accent` - Sidebar accent (rgba(240, 248, 254, 1))
+- `text-sidebar-accent-foreground` - Sidebar accent text (rgba(49, 134, 223, 1))
+- `border-sidebar-border` - Sidebar borders (rgba(229, 231, 232, 1))
+- `ring-sidebar-ring` - Sidebar focus rings (rgba(49, 134, 223, 1))
+
+---
+
+## 📝 Typography System
+
+### CRITICAL: Font Family Rules
+
+**ALWAYS use 'Inter' font family for ALL text elements.** This is the only font family allowed in this design system.
+
+```tsx
+// ✅ CORRECT - Typography handled automatically
+<h1>Heading text</h1>
+<p>Body text</p>
+<button>Button text</button>
+
+// ✅ CORRECT - If you need to manually set font family
+<div style={{ fontFamily: "'Inter', sans-serif" }}>Text</div>
+
+// ❌ INCORRECT - Never use other fonts
+<div style={{ fontFamily: 'Arial' }}>Text</div>
+<p className="font-serif">Text</p>
+```
+
+### Typography Scale
+
+**DO NOT use Tailwind's text size classes (text-sm, text-lg, etc.) for typography.** The base typography is automatically applied through CSS.
+
+#### Heading Elements
+```tsx
+// ✅ CORRECT - Use semantic HTML, styling is automatic
+<h1>Display Large</h1>     // 56px / 3.5rem, Bold, Inter
+<h2>Display Medium</h2>    // 48px / 3rem, Bold, Inter
+<h3>Display Small</h3>     // 40px / 2.5rem, Bold, Inter
+<h4>Title</h4>             // 32px / 2rem, Semi-Bold, Inter
+
+// ❌ INCORRECT - Don't override with Tailwind classes
+<h1 className="text-4xl font-bold">Heading</h1>
+```
+
+#### Body & Small Text
+```tsx
+// ✅ CORRECT
+<p>Body text</p>              // 16px / 1rem, Normal, Inter
+<label>Label text</label>     // 14px / 0.875rem, Semi-Bold, Inter
+<input placeholder="Text" />  // 16px / 1rem, Normal, Inter
+<button>Button</button>       // 16px / 1rem, Medium, Inter
+
+// Special classes
+<p className="caption">CAPTION TEXT</p>  // 12px, Normal, Uppercase, Inter
+<span className="badge">Badge</span>     // 14px, Semi-Bold, Inter
+```
+
+### Font Weight Variables
+
+When you need to apply font weights directly, use these CSS variables:
+
+```tsx
+// ✅ CORRECT - Use CSS variables
+<p style={{ fontWeight: 'var(--font-weight-normal)' }}>Normal (400)</p>
+<p style={{ fontWeight: 'var(--font-weight-medium)' }}>Medium (500)</p>
+<p style={{ fontWeight: 'var(--font-weight-semi-bold)' }}>Semi-Bold (600)</p>
+<p style={{ fontWeight: 'var(--font-weight-bold)' }}>Bold (700)</p>
+
+// ❌ INCORRECT - Don't use Tailwind font weight classes
+<p className="font-bold">Text</p>
+```
+
+### Text Size Variables
+
+If you must set custom text sizes, use these CSS variables:
+
+```tsx
+// ✅ CORRECT - Use CSS variables
+<span style={{ fontSize: 'var(--text-xs)' }}>12px</span>
+<span style={{ fontSize: 'var(--text-sm)' }}>14px</span>
+<span style={{ fontSize: 'var(--text-base)' }}>16px</span>
+<span style={{ fontSize: 'var(--text-lg)' }}>40px</span>
+<span style={{ fontSize: 'var(--text-xl)' }}>48px</span>
+<span style={{ fontSize: 'var(--text-2xl)' }}>56px</span>
+<span style={{ fontSize: 'var(--text-caption)' }}>12px</span>
+<span style={{ fontSize: 'var(--text-badge)' }}>14px</span>
+
+// ❌ INCORRECT - Don't use Tailwind text size classes
+<span className="text-sm">Text</span>
+<span className="text-3xl">Text</span>
+```
+
+---
+
+## 📏 Spacing System
+
+Use Tailwind's default spacing scale with standard classes:
+
+```tsx
+// ✅ CORRECT - Use Tailwind spacing classes
+<div className="p-4">Padding 16px</div>
+<div className="m-6">Margin 24px</div>
+<div className="gap-2">Gap 8px</div>
+<div className="space-y-4">Vertical spacing 16px</div>
+
+// Common spacing values:
+// 0.5 = 2px, 1 = 4px, 2 = 8px, 3 = 12px, 4 = 16px
+// 5 = 20px, 6 = 24px, 8 = 32px, 10 = 40px, 12 = 48px
+```
+
+---
+
+## 🔲 Border Radius
+
+Use Tailwind's radius classes that reference the CSS variable `--radius` (8px):
+
+```tsx
+// ✅ CORRECT - Use Tailwind radius classes
+<div className="rounded-sm">   // calc(var(--radius) - 4px) = 4px
+<div className="rounded-md">   // calc(var(--radius) - 2px) = 6px
+<div className="rounded-lg">   // var(--radius) = 8px (default)
+<div className="rounded-xl">   // calc(var(--radius) + 4px) = 12px
+
+// Or use CSS variables directly
+<div style={{ borderRadius: 'var(--radius)' }}>8px radius</div>
+
+// ❌ INCORRECT - Don't hardcode radius values
+<div className="rounded-[12px]">Content</div>
+<div style={{ borderRadius: '16px' }}>Content</div>
+```
+
+---
+
+## 🎯 Component Patterns
+
+### Using Design System Components
+
+**ALWAYS use the pre-built components from `/src/app/components/ui/` instead of building from scratch.**
+
+#### Available Components
+
+```tsx
+// Buttons
+import { Button } from './components/ui/button'
+<Button>Default</Button>
+<Button variant="secondary">Secondary</Button>
+<Button variant="outline">Outline</Button>
+<Button variant="ghost">Ghost</Button>
+<Button variant="destructive">Destructive</Button>
+<Button variant="link">Link</Button>
+<Button size="sm">Small</Button>
+<Button size="lg">Large</Button>
+<Button size="icon">Icon</Button>
+
+// Cards
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './components/ui/card'
+<Card>
+  <CardHeader>
+    <CardTitle>Title</CardTitle>
+    <CardDescription>Description</CardDescription>
+  </CardHeader>
+  <CardContent>Content</CardContent>
+  <CardFooter>Footer</CardFooter>
+</Card>
+
+// Forms
+import { Input } from './components/ui/input'
+import { Label } from './components/ui/label'
+import { Checkbox } from './components/ui/checkbox'
+import { Switch } from './components/ui/switch'
+import { Select } from './components/ui/select'
+import { Textarea } from './components/ui/textarea'
+
+<div className="space-y-2">
+  <Label htmlFor="email">Email</Label>
+  <Input id="email" type="email" placeholder="you@example.com" />
+</div>
+
+// Badges
+import { Badge } from './components/ui/badge'
+<Badge>Default</Badge>
+<Badge variant="secondary">Secondary</Badge>
+<Badge variant="outline">Outline</Badge>
+<Badge variant="destructive">Destructive</Badge>
+
+// Alerts
+import { Alert, AlertDescription, AlertTitle } from './components/ui/alert'
+<Alert>
+  <AlertTitle>Title</AlertTitle>
+  <AlertDescription>Message</AlertDescription>
+</Alert>
+<Alert variant="destructive">Error alert</Alert>
+
+// Dialogs & Modals
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from './components/ui/dialog'
+import { AlertDialog } from './components/ui/alert-dialog'
+import { Sheet } from './components/ui/sheet'
+import { Drawer } from './components/ui/drawer'
+
+// Navigation
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
+import { Accordion } from './components/ui/accordion'
+import { NavigationMenu } from './components/ui/navigation-menu'
+import { Breadcrumb } from './components/ui/breadcrumb'
+import { Pagination } from './components/ui/pagination'
+
+// Feedback
+import { Progress } from './components/ui/progress'
+import { Skeleton } from './components/ui/skeleton'
+import { toast } from 'sonner'
+
+// Overlays
+import { Popover, PopoverContent, PopoverTrigger } from './components/ui/popover'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './components/ui/tooltip'
+import { DropdownMenu } from './components/ui/dropdown-menu'
+import { ContextMenu } from './components/ui/context-menu'
+import { HoverCard } from './components/ui/hover-card'
+
+// Layout
+import { Separator } from './components/ui/separator'
+import { ScrollArea } from './components/ui/scroll-area'
+import { Resizable } from './components/ui/resizable'
+import { Sidebar } from './components/ui/sidebar'
+
+// Data Display
+import { Table } from './components/ui/table'
+import { Avatar } from './components/ui/avatar'
+
+// Form Controls
+import { RadioGroup } from './components/ui/radio-group'
+import { Slider } from './components/ui/slider'
+import { Toggle } from './components/ui/toggle'
+import { ToggleGroup } from './components/ui/toggle-group'
+import { Calendar } from './components/ui/calendar'
+import { Command } from './components/ui/command'
+```
+
+### Component Import Patterns
+
+```tsx
+// ✅ CORRECT - Import from components/ui
+import { Button } from './components/ui/button'
+import { Card, CardHeader, CardTitle } from './components/ui/card'
+
+// Adjust path based on your file location:
+// From /src/app/App.tsx:
+import { Button } from './components/ui/button'
+
+// From /src/app/pages/Dashboard.tsx:
+import { Button } from '../components/ui/button'
+
+// From /src/app/components/Feature.tsx:
+import { Button } from './ui/button'
+```
+
+---
+
+## ✅ Complete Example: Correct Usage
+
+```tsx
+import { Button } from './components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
+import { Input } from './components/ui/input'
+import { Label } from './components/ui/label'
+import { Badge } from './components/ui/badge'
+
+export default function CorrectExample() {
+  return (
+    <div className="min-h-screen bg-background p-6">
+      <div className="max-w-2xl mx-auto space-y-6">
+        {/* Typography: Semantic HTML, automatic styling */}
+        <div>
+          <h1>Welcome to Our App</h1>
+          <p className="text-muted-foreground">
+            This example follows all design system guidelines.
+          </p>
+        </div>
+
+        {/* Card with proper component usage */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>User Profile</CardTitle>
+              <Badge variant="secondary">Active</Badge>
+            </div>
+            <CardDescription>
+              Update your profile information below.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Form with proper spacing and colors */}
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input 
+                id="name" 
+                placeholder="Enter your name"
+                className="bg-input-background"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input 
+                id="email" 
+                type="email"
+                placeholder="you@example.com"
+                className="bg-input-background"
+              />
+            </div>
+
+            {/* Button with proper variant */}
+            <div className="flex gap-3 pt-4">
+              <Button className="flex-1">Save Changes</Button>
+              <Button variant="outline">Cancel</Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Grid with proper spacing */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Statistics</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl" style={{ fontWeight: 'var(--font-weight-bold)' }}>
+                1,234
+              </div>
+              <p className="text-muted-foreground">Total Users</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Revenue</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl" style={{ fontWeight: 'var(--font-weight-bold)' }}>
+                $45.2K
+              </div>
+              <p className="text-muted-foreground">This Month</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Growth</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl text-chart-2" style={{ fontWeight: 'var(--font-weight-bold)' }}>
+                +24%
+              </div>
+              <p className="text-muted-foreground">vs Last Month</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  )
+}
+```
+
+---
+
+## ❌ Common Mistakes to Avoid
+
+### Don't Hardcode Colors
+```tsx
+// ❌ WRONG
+<div className="bg-blue-500 text-white">
+<div style={{ backgroundColor: '#3186DF', color: '#FFFFFF' }}>
+<button className="bg-red-600">Delete</button>
+
+// ✅ CORRECT
+<div className="bg-primary text-primary-foreground">
+<Button variant="destructive">Delete</Button>
+```
+
+### Don't Override Typography
+```tsx
+// ❌ WRONG - Don't use Tailwind text classes for font size/weight
+<h1 className="text-4xl font-bold">Heading</h1>
+<p className="text-sm">Body text</p>
+<button className="font-semibold">Action</button>
+
+// ✅ CORRECT - Let semantic HTML handle styling
+<h1>Heading</h1>
+<p>Body text</p>
+<button>Action</button>
+
+// Or use CSS variables when needed
+<div style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-weight-bold)' }}>
+  Custom text
+</div>
+```
+
+### Don't Use Wrong Font Families
+```tsx
+// ❌ WRONG
+<p className="font-serif">Text</p>
+<p style={{ fontFamily: 'Arial' }}>Text</p>
+
+// ✅ CORRECT - Inter is set globally, no need to specify
+<p>Text</p>
+
+// Or if explicitly needed:
+<p style={{ fontFamily: "'Inter', sans-serif" }}>Text</p>
+```
+
+### Don't Hardcode Border Radius
+```tsx
+// ❌ WRONG
+<div className="rounded-[16px]">
+<div style={{ borderRadius: '12px' }}>
+
+// ✅ CORRECT
+<div className="rounded-lg">
+<div style={{ borderRadius: 'var(--radius)' }}>
+```
+
+### Don't Build Components from Scratch
+```tsx
+// ❌ WRONG - Building custom button
+<button className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+  Click Me
+</button>
+
+// ✅ CORRECT - Use design system Button
+import { Button } from './components/ui/button'
+<Button>Click Me</Button>
+```
+
+---
+
+## 🎨 Layout Patterns
+
+### Page Container Pattern
+```tsx
+// ✅ CORRECT - Standard page layout
+export default function Page() {
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1>Page Title</h1>
+        {/* Page content */}
+      </div>
+    </div>
+  )
+}
+```
+
+### Grid Layouts
+```tsx
+// ✅ CORRECT - Responsive grid with proper spacing
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <Card>...</Card>
+  <Card>...</Card>
+  <Card>...</Card>
+</div>
+```
+
+### Flex Layouts
+```tsx
+// ✅ CORRECT - Flex with proper spacing
+<div className="flex flex-col gap-4">
+  <div className="flex items-center justify-between">
+    <h2>Section Title</h2>
+    <Button size="sm">Action</Button>
+  </div>
+  <p className="text-muted-foreground">Description</p>
+</div>
+```
+
+---
+
+## 📋 Quick Reference Checklist
+
+When generating UI components, ensure you:
+
+- [ ] Use semantic color classes (`bg-primary`, `text-foreground`, etc.)
+- [ ] Never hardcode color values
+- [ ] Use semantic HTML elements (`<h1>`, `<p>`, `<button>`, etc.)
+- [ ] Don't override typography with Tailwind text classes
+- [ ] Only use 'Inter' font family
+- [ ] Import and use design system components from `/src/app/components/ui/`
+- [ ] Use Tailwind spacing classes (`p-4`, `gap-6`, `space-y-4`, etc.)
+- [ ] Use radius classes (`rounded-lg`, `rounded-md`, etc.)
+- [ ] Use CSS variables when direct access is needed
+- [ ] Follow component composition patterns
+
+---
+
+## 📂 File Locations Reference
+
+- **Theme & Colors**: `/src/styles/theme.css`
+- **Global Styles**: `/src/styles/index.css`
+- **Tailwind Config**: `/src/styles/tailwind.css`
+- **Font Imports**: `/src/styles/fonts.css`
+- **UI Components**: `/src/app/components/ui/`
+- **Main App**: `/src/app/App.tsx`
+
+---
+
+## 🔄 Updating the Design System
+
+To customize the design system, users should edit `/src/styles/theme.css`:
+
+```css
+/* Users can update these values */
+:root {
+  --primary: rgba(49, 134, 223, 1);        /* Change primary color */
+  --radius: 8px;                           /* Change default radius */
+  --text-lg: 2.5rem;                      /* Change heading sizes */
+  --font-weight-bold: 700;                /* Change font weights */
+  /* etc. */
+}
+```
+
+**Important**: Never hardcode values in components. Always reference CSS variables so users can customize the design system by editing the theme file.
+
+---
+
+## Summary
+
+This design system prioritizes:
+1. **Consistency** - Use semantic tokens, not hardcoded values
+2. **Flexibility** - Users can customize via CSS variables
+3. **Simplicity** - Use pre-built components, avoid reinventing
+4. **Typography** - Inter font only, semantic HTML styling
+5. **Accessibility** - Proper semantic structure and focus states
+
+Follow these guidelines strictly to ensure all generated UI adheres to the design system and allows users to customize styling through CSS variable updates.
