@@ -1,63 +1,57 @@
 
 
-# Sidebar Text Format Improvements
+# Incorporate Design Language from MDX Files
 
 ## What Changes
 
-Based on the reference image, the sidebar navigation items should be organized into labeled groups with uppercase section headers, matching the grouped structure shown. The current flat list of nav items will be split into groups with section labels.
+Add the typography CSS variables and font-weight tokens defined in the MDX design system to the project's `src/index.css`. This gives the codebase access to the standardized `--text-*` and `--font-weight-*` CSS variables for future use, while keeping the existing color palette, layout, spacing, and minimalistic aesthetic completely intact.
 
-Mapping existing items to groups based on the reference:
+The MDX files will also be saved into the project as reference documentation.
 
-**OVERVIEW** (uppercase label)
-- Dashboard (currently "Overview") → keep as "Overview" since that's the existing route
-- Products
+## Why Not Change Colors
 
-**DEVELOPER** (uppercase label)
-- API Credentials (maps to "Auth & API Keys")
-- Webhooks
-- Logs & Events (maps to "Logs")
-
-**SETTINGS** (uppercase label)
-- Settings (maps to "Configuration")
-- Users (maps to "Users & Permissions")
+The MDX defines a blue primary color palette (`rgba(49, 134, 223, 1)`), which is fundamentally different from the current neutral/grey Vercel-inspired theme. Adopting it would break the "clean minimalistic approach" the user wants preserved. The existing semantic color system (`bg-primary`, `text-muted-foreground`, etc.) already follows the MDX's recommended pattern of using CSS variables -- just with different values. No color changes needed.
 
 ## File Changes
 
-### `src/components/layout/AppSidebar.tsx`
+### 1. `src/index.css` -- Add typography CSS variables
 
-1. Replace the flat `navItems` array with grouped sections:
-```typescript
-const navGroups = [
-  {
-    label: "OVERVIEW",
-    items: [
-      { title: "Overview", url: `${prefix}/overview`, icon: LayoutDashboard },
-      { title: "Products", url: `${prefix}/products`, icon: Box },
-    ],
-  },
-  {
-    label: "DEVELOPER",
-    items: [
-      { title: "API Credentials", url: `${prefix}/credentials`, icon: Key },
-      { title: "Webhooks", url: `${prefix}/webhooks`, icon: Webhook },
-      { title: "Logs & Events", url: `${prefix}/logs`, icon: ScrollText },
-    ],
-  },
-  {
-    label: "SETTINGS",
-    items: [
-      { title: "Settings", url: `${prefix}/settings`, icon: Settings },
-      { title: "Users", url: `${prefix}/users`, icon: Users },
-    ],
-  },
-];
+Add to `:root` block:
+
+```css
+/* Typography scale */
+--text-xs: 0.75rem;
+--text-sm: 0.875rem;
+--text-base: 1rem;
+--text-lg: 2.5rem;
+--text-xl: 3rem;
+--text-2xl: 3.5rem;
+--text-caption: 0.75rem;
+--text-badge: 0.875rem;
+
+/* Font weights */
+--font-weight-normal: 400;
+--font-weight-medium: 500;
+--font-weight-semi-bold: 600;
+--font-weight-bold: 700;
 ```
 
-2. Update the `<nav>` section to render groups with uppercase labels and spaced sections. Each group gets:
-   - A small uppercase label in muted color (`text-[11px] font-semibold tracking-wider text-muted-foreground uppercase`)
-   - Nav items beneath with slightly larger spacing between groups (`space-y-6` between groups, `space-y-1` within)
+These variables provide a standardized way to reference typography tokens in components, consistent with the MDX design language.
 
-3. In collapsed mode, hide the group labels (same as hiding text today).
+### 2. `src/docs/design-system-instructions.mdx` -- Save reference doc
 
-No other files changed. All routing, layout, auth pages, and previous implementations remain exactly as-is.
+Copy the uploaded MDX file into the project as developer documentation.
+
+### 3. `src/docs/design-system-quick-reference.mdx` -- Save reference doc
+
+Copy the uploaded quick-reference MDX file into the project as developer documentation.
+
+## What Stays the Same
+
+- All existing color tokens (dark/light mode palettes)
+- All page layouts, component placements, and spacings
+- Sidebar structure and navigation groups
+- Auth pages (login, signup, MFA, forgot password, SSO)
+- Dither background effect
+- All existing components and routing
 
