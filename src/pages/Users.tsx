@@ -70,7 +70,7 @@ const ROLES_INFO = [
 const DEFAULT_USERS: AppUser[] = [
   { id: "1", name: "Soumik Choudhury", email: "soumik@helo.ai", role: "admin", status: "active" },
   { id: "2", name: "Arjun Mehta", email: "arjun@helo.ai", role: "developer", status: "active" },
-  { id: "3", name: "Priya Sharma", email: "priya@helo.ai", role: "tester", status: "active" },
+  { id: "3", name: "Priya Sharma", email: "priya@helo.ai", role: "viewer", status: "active" },
 ];
 
 export default function Users() {
