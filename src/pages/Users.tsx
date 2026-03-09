@@ -20,7 +20,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type AppRole = "admin" | "developer" | "tester";
+type AppRole = "admin" | "developer" | "viewer";
 type UserStatus = "active" | "pending";
 
 interface AppUser {
