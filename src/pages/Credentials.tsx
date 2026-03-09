@@ -209,9 +209,9 @@ export default function Credentials() {
               </div>
               <div>
                 <p className="text-muted-foreground text-xs mb-1">Status</p>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusBadgeMap[keyStatus].className}`}>
+                <Badge variant={statusBadgeMap[keyStatus].variant} className={statusBadgeMap[keyStatus].className}>
                   {statusBadgeMap[keyStatus].label}
-                </span>
+                </Badge>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs mb-1">Environment</p>
