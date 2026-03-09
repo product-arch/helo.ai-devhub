@@ -154,10 +154,10 @@ export default function Credentials() {
     }
   };
 
-  const statusBadgeMap: Record<string, { label: string; className: string }> = {
-    active: { label: "Active", className: "bg-success/10 text-success border-success/20" },
-    suspended: { label: "Suspended", className: "bg-warning/10 text-warning border-warning/20" },
-    revoked: { label: "Revoked", className: "bg-destructive/10 text-destructive border-destructive/20" },
+  const statusBadgeMap: Record<string, { label: string; variant: "outline" | "destructive" | "secondary"; className: string }> = {
+    active: { label: "Active", variant: "outline", className: "bg-success/10 text-success border-success/20" },
+    suspended: { label: "Suspended", variant: "outline", className: "bg-warning/10 text-warning border-warning/20" },
+    revoked: { label: "Revoked", variant: "destructive", className: "" },
   };
 
   const getCapabilityIcon = (status: string) => {
@@ -195,7 +195,7 @@ export default function Credentials() {
                 </CardTitle>
                 <CardDescription>Identity and lifecycle for this API key</CardDescription>
               </div>
-              <Badge variant={isProduction ? "default" : "secondary"} className={isProduction ? "bg-amber-500/10 text-amber-600 border-amber-500/20 hover:bg-amber-500/10" : ""}>
+              <Badge variant="outline" className={isProduction ? "bg-success/10 text-success border-success/20 hover:bg-success/10" : "bg-warning/10 text-warning border-warning/20 hover:bg-warning/10"}>
                 {isProduction ? "Production" : "Staging"}
               </Badge>
             </div>
@@ -209,9 +209,9 @@ export default function Credentials() {
               </div>
               <div>
                 <p className="text-muted-foreground text-xs mb-1">Status</p>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusBadgeMap[keyStatus].className}`}>
+                <Badge variant={statusBadgeMap[keyStatus].variant} className={statusBadgeMap[keyStatus].className}>
                   {statusBadgeMap[keyStatus].label}
-                </span>
+                </Badge>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs mb-1">Environment</p>

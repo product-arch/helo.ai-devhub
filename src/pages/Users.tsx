@@ -14,13 +14,13 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { ShieldCheck, Code2, FlaskConical, UserPlus, MoreHorizontal, HelpCircle } from "lucide-react";
+import { ShieldCheck, Code2, Eye, UserPlus, MoreHorizontal, HelpCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type AppRole = "admin" | "developer" | "tester";
+type AppRole = "admin" | "developer" | "viewer";
 type UserStatus = "active" | "pending";
 
 interface AppUser {
@@ -42,10 +42,10 @@ const ROLE_CONFIG: Record<AppRole, { label: string; icon: React.ElementType; cla
     icon: Code2,
     className: "bg-primary/10 text-primary border-primary/20",
   },
-  tester: {
-    label: "Tester",
-    icon: FlaskConical,
-    className: "bg-success/10 text-success border-success/20",
+  viewer: {
+    label: "Viewer",
+    icon: Eye,
+    className: "bg-secondary text-secondary-foreground border-border",
   },
 };
 
@@ -61,8 +61,8 @@ const ROLES_INFO = [
     scope: "Products, Webhooks, Logs, Settings (read-only credentials, no user invites)",
   },
   {
-    role: "Tester",
-    description: "Can view and test existing configurations. Cannot configure new products or change webhook/product API scope.",
+    role: "Viewer",
+    description: "Can view existing configurations. Cannot configure new products or change webhook/product API scope.",
     scope: "Logs, read-only Products/Webhooks/Credentials/Settings",
   },
 ];
@@ -70,7 +70,7 @@ const ROLES_INFO = [
 const DEFAULT_USERS: AppUser[] = [
   { id: "1", name: "Soumik Choudhury", email: "soumik@helo.ai", role: "admin", status: "active" },
   { id: "2", name: "Arjun Mehta", email: "arjun@helo.ai", role: "developer", status: "active" },
-  { id: "3", name: "Priya Sharma", email: "priya@helo.ai", role: "tester", status: "active" },
+  { id: "3", name: "Priya Sharma", email: "priya@helo.ai", role: "viewer", status: "active" },
 ];
 
 export default function Users() {
@@ -239,10 +239,10 @@ export default function Users() {
                       Developer
                     </span>
                   </SelectItem>
-                  <SelectItem value="tester">
+                  <SelectItem value="viewer">
                     <span className="flex items-center gap-2">
-                      <FlaskConical className="h-3.5 w-3.5 text-success" />
-                      Tester
+                      <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                      Viewer
                     </span>
                   </SelectItem>
                 </SelectContent>
