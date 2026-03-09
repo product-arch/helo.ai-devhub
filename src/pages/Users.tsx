@@ -61,8 +61,8 @@ const ROLES_INFO = [
     scope: "Products, Webhooks, Logs, Settings (read-only credentials, no user invites)",
   },
   {
-    role: "Tester",
-    description: "Can view and test existing configurations. Cannot configure new products or change webhook/product API scope.",
+    role: "Viewer",
+    description: "Can view existing configurations. Cannot configure new products or change webhook/product API scope.",
     scope: "Logs, read-only Products/Webhooks/Credentials/Settings",
   },
 ];
