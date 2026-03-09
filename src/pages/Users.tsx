@@ -42,10 +42,10 @@ const ROLE_CONFIG: Record<AppRole, { label: string; icon: React.ElementType; cla
     icon: Code2,
     className: "bg-primary/10 text-primary border-primary/20",
   },
-  tester: {
-    label: "Tester",
-    icon: FlaskConical,
-    className: "bg-success/10 text-success border-success/20",
+  viewer: {
+    label: "Viewer",
+    icon: Eye,
+    className: "bg-secondary text-secondary-foreground border-border",
   },
 };
 
