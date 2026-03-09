@@ -14,7 +14,7 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { ShieldCheck, Code2, FlaskConical, UserPlus, MoreHorizontal, HelpCircle } from "lucide-react";
+import { ShieldCheck, Code2, Eye, UserPlus, MoreHorizontal, HelpCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
