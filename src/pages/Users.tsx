@@ -239,10 +239,10 @@ export default function Users() {
                       Developer
                     </span>
                   </SelectItem>
-                  <SelectItem value="tester">
+                  <SelectItem value="viewer">
                     <span className="flex items-center gap-2">
-                      <FlaskConical className="h-3.5 w-3.5 text-success" />
-                      Tester
+                      <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                      Viewer
                     </span>
                   </SelectItem>
                 </SelectContent>

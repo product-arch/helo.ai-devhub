@@ -154,10 +154,10 @@ export default function Credentials() {
     }
   };
 
-  const statusBadgeMap: Record<string, { label: string; className: string }> = {
-    active: { label: "Active", className: "bg-success/10 text-success border-success/20" },
-    suspended: { label: "Suspended", className: "bg-warning/10 text-warning border-warning/20" },
-    revoked: { label: "Revoked", className: "bg-destructive/10 text-destructive border-destructive/20" },
+  const statusBadgeMap: Record<string, { label: string; variant: "outline" | "destructive" | "secondary"; className: string }> = {
+    active: { label: "Active", variant: "outline", className: "bg-success/10 text-success border-success/20" },
+    suspended: { label: "Suspended", variant: "outline", className: "bg-warning/10 text-warning border-warning/20" },
+    revoked: { label: "Revoked", variant: "destructive", className: "" },
   };
 
   const getCapabilityIcon = (status: string) => {

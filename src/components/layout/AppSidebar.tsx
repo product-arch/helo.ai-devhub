@@ -47,9 +47,9 @@ export function AppSidebar() {
   ];
 
   const envColors: Record<string, string> = {
-    production: "bg-success/10 text-success border-success/20",
-    staging: "bg-warning/10 text-warning border-warning/20",
-    development: "bg-primary/10 text-primary border-primary/20",
+    production: "bg-success/10 text-success border-success/20 hover:bg-success/10",
+    staging: "bg-warning/10 text-warning border-warning/20 hover:bg-warning/10",
+    development: "bg-accent text-accent-foreground border-border hover:bg-accent",
   };
 
   return (
