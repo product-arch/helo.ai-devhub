@@ -195,7 +195,7 @@ export default function Credentials() {
                 </CardTitle>
                 <CardDescription>Identity and lifecycle for this API key</CardDescription>
               </div>
-              <Badge variant={isProduction ? "default" : "secondary"} className={isProduction ? "bg-amber-500/10 text-amber-600 border-amber-500/20 hover:bg-amber-500/10" : ""}>
+              <Badge variant="outline" className={isProduction ? "bg-success/10 text-success border-success/20 hover:bg-success/10" : "bg-warning/10 text-warning border-warning/20 hover:bg-warning/10"}>
                 {isProduction ? "Production" : "Staging"}
               </Badge>
             </div>
