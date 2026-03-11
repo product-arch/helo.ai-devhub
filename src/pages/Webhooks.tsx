@@ -149,7 +149,6 @@ export default function Webhooks() {
   const [subscriptions, setSubscriptions] = useState<Record<string, boolean>>(buildInitialSubscriptions);
   const [testModalEvent, setTestModalEvent] = useState<string | null>(null);
   const [payloadCopied, setPayloadCopied] = useState(false);
-  const [payloadCopied, setPayloadCopied] = useState(false);
   const [retryCount, setRetryCount] = useState("5");
   const [retryInterval, setRetryInterval] = useState("30");
   const { toast } = useToast();
