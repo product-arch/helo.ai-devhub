@@ -432,8 +432,8 @@ export default function Webhooks() {
               </pre>
             </div>
             <DialogFooter>
-              <Button onClick={handleSendPayload} disabled={isSendingPayload}>
-                {isSendingPayload ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending…</> : <><Send className="h-4 w-4 mr-2" />Send Payload</>}
+              <Button onClick={handleCopyCurl}>
+                <Copy className="h-4 w-4 mr-2" />Copy as cURL
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -143,6 +143,9 @@ export function CreateWebhookModal({ open, onOpenChange, appId }: CreateWebhookM
                  testStatus === "failed" ? <><XCircle className="h-4 w-4 mr-1" /> Failed</> :
                  <><FlaskConical className="h-4 w-4 mr-1" /> Test</>}
               </Button>
+              <Button variant="outline" onClick={handleCopyTestUrl} disabled={!url} title="Copy verification URL as cURL">
+                <Copy className="h-4 w-4" />
+              </Button>
             </div>
           </div>
           <div className="space-y-2">
