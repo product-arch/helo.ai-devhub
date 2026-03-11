@@ -1,0 +1,129 @@
+import { useState } from "react";
+import { useApp } from "@/contexts/AppContext";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Loader2, CheckCircle2, XCircle, FlaskConical } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+interface CreateWebhookModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  appId: string;
+}
+
+export function CreateWebhookModal({ open, onOpenChange, appId }: CreateWebhookModalProps) {
+  const { apps, createWebhookEndpoint } = useApp();
+  const app = apps.find((a) => a.id === appId);
+  const { toast } = useToast();
+
+  const [name, setName] = useState("");
+  const [url, setUrl] = useState("");
+  const [product, setProduct] = useState("");
+  const [isTesting, setIsTesting] = useState(false);
+  const [testStatus, setTestStatus] = useState<"idle" | "success" | "failed">("idle");
+
+  if (!app) return null;
+
+  const enabledProducts = app.products.filter((p) => p.status !== "disabled");
+
+  const handleTest = () => {
+    if (!url) return;
+    setIsTesting(true);
+    setTestStatus("idle");
+    setTimeout(() => {
+      setIsTesting(false);
+      setTestStatus(Math.random() > 0.2 ? "success" : "failed");
+    }, 1500);
+  };
+
+  const handleCreate = () => {
+    if (!name.trim() || !url.trim() || !product) return;
+    createWebhookEndpoint(appId, {
+      name: name.trim(),
+      url: url.trim(),
+      product,
+      status: "active",
+      retryCount: 5,
+      retryInterval: 30,
+      subscribedEvents: [],
+      createdBy: app.email,
+    });
+    toast({ title: "Webhook created", description: `${name} has been created.` });
+    handleClose();
+  };
+
+  const handleClose = () => {
+    onOpenChange(false);
+    setTimeout(() => {
+      setName("");
+      setUrl("");
+      setProduct("");
+      setIsTesting(false);
+      setTestStatus("idle");
+    }, 200);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Create Webhook Endpoint</DialogTitle>
+          <DialogDescription>Configure a new endpoint to receive event notifications</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label>Name <span className="text-destructive">*</span></Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Primary Webhook" />
+          </div>
+          <div className="space-y-2">
+            <Label>Product Scope <span className="text-destructive">*</span></Label>
+            <Select value={product} onValueChange={setProduct}>
+              <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
+              <SelectContent>
+                {enabledProducts.map((p) => (
+                  <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Endpoint URL <span className="text-destructive">*</span></Label>
+            <div className="flex gap-2">
+              <Input
+                value={url}
+                onChange={(e) => { setUrl(e.target.value); setTestStatus("idle"); }}
+                placeholder="https://api.example.com/webhooks"
+                className="font-mono text-sm"
+              />
+              <Button
+                variant="outline"
+                onClick={handleTest}
+                disabled={!url || isTesting}
+                className={
+                  testStatus === "success" ? "border-success text-success" :
+                  testStatus === "failed" ? "border-destructive text-destructive" : ""
+                }
+              >
+                {isTesting ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Testing</> :
+                 testStatus === "success" ? <><CheckCircle2 className="h-4 w-4 mr-1" /> Verified</> :
+                 testStatus === "failed" ? <><XCircle className="h-4 w-4 mr-1" /> Failed</> :
+                 <><FlaskConical className="h-4 w-4 mr-1" /> Test</>}
+              </Button>
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={handleClose}>Cancel</Button>
+          <Button onClick={handleCreate} disabled={!name.trim() || !url.trim() || !product}>Create</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
