@@ -44,12 +44,14 @@ export function CreateWebhookModal({ open, onOpenChange, appId }: CreateWebhookM
       verifyUrl.searchParams.set("hub.mode", "subscribe");
       verifyUrl.searchParams.set("hub.verify_token", verificationToken || "");
       verifyUrl.searchParams.set("hub.challenge", challenge);
-      const res = await fetch(verifyUrl.toString());
+      const res = await fetch(verifyUrl.toString(), { mode: "cors" });
       const body = await res.text();
       setTestStatus(res.ok && body.trim() === challenge ? "success" : "failed");
-    } catch {
+    } catch (error) {
       setTestStatus("failed");
-      toast({ title: "Test failed", description: "Network error — ensure your endpoint has CORS headers (Access-Control-Allow-Origin: *)", variant: "destructive" });
+      const msg = error instanceof Error ? error.message : "Unknown error";
+      console.error("Webhook test error:", error);
+      toast({ title: "Test failed", description: `Network error: ${msg}`, variant: "destructive" });
     } finally {
       setIsTesting(false);
     }
