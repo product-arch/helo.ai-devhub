@@ -148,7 +148,7 @@ export default function Webhooks() {
   const [copied, setCopied] = useState<string | null>(null);
   const [subscriptions, setSubscriptions] = useState<Record<string, boolean>>(buildInitialSubscriptions);
   const [testModalEvent, setTestModalEvent] = useState<string | null>(null);
-  const [isSendingPayload, setIsSendingPayload] = useState(false);
+  const [payloadCopied, setPayloadCopied] = useState(false);
   const [payloadCopied, setPayloadCopied] = useState(false);
   const [retryCount, setRetryCount] = useState("5");
   const [retryInterval, setRetryInterval] = useState("30");
