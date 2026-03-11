@@ -181,6 +181,7 @@ export default function Webhooks() {
       const payload = getPayloadForEvent(eventId);
       const res = await fetch(endpoint.url, {
         method: "POST",
+        mode: "cors",
         headers: { "Content-Type": "application/json" },
         body: payload,
       });
@@ -189,8 +190,10 @@ export default function Webhooks() {
       } else {
         toast({ title: "Delivery failed", description: `Endpoint returned HTTP ${res.status}`, variant: "destructive" });
       }
-    } catch {
-      toast({ title: "Delivery failed", description: "Network error — ensure your endpoint has CORS headers", variant: "destructive" });
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Unknown error";
+      console.error("Webhook delivery error:", error);
+      toast({ title: "Delivery failed", description: `Network error: ${msg}`, variant: "destructive" });
     } finally {
       setIsSendingPayload(false);
     }
