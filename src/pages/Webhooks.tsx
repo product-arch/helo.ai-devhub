@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { CreateWebhookModal } from "@/components/CreateWebhookModal";
 import {
-  Eye, EyeOff, Copy, Check, Save, Zap, Loader2, Send, FlaskConical, XCircle, CheckCircle2, X,
+  Eye, EyeOff, Copy, Check, Save, Zap, FlaskConical, XCircle, CheckCircle2, X,
   Plus, ArrowLeft, Trash2, Pause, Play,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -148,7 +148,6 @@ export default function Webhooks() {
   const [copied, setCopied] = useState<string | null>(null);
   const [subscriptions, setSubscriptions] = useState<Record<string, boolean>>(buildInitialSubscriptions);
   const [testModalEvent, setTestModalEvent] = useState<string | null>(null);
-  const [isSendingPayload, setIsSendingPayload] = useState(false);
   const [payloadCopied, setPayloadCopied] = useState(false);
   const [retryCount, setRetryCount] = useState("5");
   const [retryInterval, setRetryInterval] = useState("30");
@@ -171,32 +170,15 @@ export default function Webhooks() {
     });
   };
 
-  const handleSendPayload = async () => {
+  const handleCopyCurl = () => {
     const eventId = testModalEvent;
     const endpoint = app.webhookEndpoints.find((w) => w.id === selectedEndpoint?.id);
     if (!endpoint || !eventId) return;
+    const payload = getPayloadForEvent(eventId);
+    const curl = `curl -X POST '${endpoint.url}' \\\n  -H 'Content-Type: application/json' \\\n  -d '${payload.replace(/'/g, "'\\''")}'`;
+    navigator.clipboard.writeText(curl);
+    toast({ title: "cURL copied", description: "Paste in your terminal to send the test payload" });
     setTestModalEvent(null);
-    setIsSendingPayload(true);
-    try {
-      const payload = getPayloadForEvent(eventId);
-      const res = await fetch(endpoint.url, {
-        method: "POST",
-        mode: "cors",
-        headers: { "Content-Type": "application/json" },
-        body: payload,
-      });
-      if (res.ok) {
-        toast({ title: "Test event sent", description: `${eventId} payload delivered — HTTP ${res.status}` });
-      } else {
-        toast({ title: "Delivery failed", description: `Endpoint returned HTTP ${res.status}`, variant: "destructive" });
-      }
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : "Unknown error";
-      console.error("Webhook delivery error:", error);
-      toast({ title: "Delivery failed", description: `Network error: ${msg}`, variant: "destructive" });
-    } finally {
-      setIsSendingPayload(false);
-    }
   };
 
   const handleCopyPayload = () => {
@@ -449,8 +431,8 @@ export default function Webhooks() {
               </pre>
             </div>
             <DialogFooter>
-              <Button onClick={handleSendPayload} disabled={isSendingPayload}>
-                {isSendingPayload ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending…</> : <><Send className="h-4 w-4 mr-2" />Send Payload</>}
+              <Button onClick={handleCopyCurl}>
+                <Copy className="h-4 w-4 mr-2" />Copy as cURL
               </Button>
             </DialogFooter>
           </DialogContent>

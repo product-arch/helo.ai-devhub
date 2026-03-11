@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Loader2, CheckCircle2, XCircle, FlaskConical } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, FlaskConical, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface CreateWebhookModalProps {
@@ -51,10 +51,22 @@ export function CreateWebhookModal({ open, onOpenChange, appId }: CreateWebhookM
       setTestStatus("failed");
       const msg = error instanceof Error ? error.message : "Unknown error";
       console.error("Webhook test error:", error);
-      toast({ title: "Test failed", description: `Network error: ${msg}`, variant: "destructive" });
+      toast({ title: "Test failed", description: `Sandbox blocks external requests. Use "Copy Test URL" and test from your terminal. (${msg})`, variant: "destructive" });
     } finally {
       setIsTesting(false);
     }
+  };
+
+  const handleCopyTestUrl = () => {
+    if (!url) return;
+    const challenge = Math.random().toString(36).substring(2, 10);
+    const verifyUrl = new URL(url);
+    verifyUrl.searchParams.set("hub.mode", "subscribe");
+    verifyUrl.searchParams.set("hub.verify_token", verificationToken || "");
+    verifyUrl.searchParams.set("hub.challenge", challenge);
+    const curl = `curl '${verifyUrl.toString()}'`;
+    navigator.clipboard.writeText(curl);
+    toast({ title: "Test URL copied", description: "Paste in your terminal to verify the endpoint" });
   };
 
   const handleCreate = () => {
@@ -130,6 +142,9 @@ export function CreateWebhookModal({ open, onOpenChange, appId }: CreateWebhookM
                  testStatus === "success" ? <><CheckCircle2 className="h-4 w-4 mr-1" /> Verified</> :
                  testStatus === "failed" ? <><XCircle className="h-4 w-4 mr-1" /> Failed</> :
                  <><FlaskConical className="h-4 w-4 mr-1" /> Test</>}
+              </Button>
+              <Button variant="outline" onClick={handleCopyTestUrl} disabled={!url} title="Copy verification URL as cURL">
+                <Copy className="h-4 w-4" />
               </Button>
             </div>
           </div>
