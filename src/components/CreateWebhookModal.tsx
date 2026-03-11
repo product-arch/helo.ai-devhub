@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Loader2, CheckCircle2, XCircle, FlaskConical } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, FlaskConical, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface CreateWebhookModalProps {
