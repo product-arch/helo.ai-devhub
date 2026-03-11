@@ -26,12 +26,13 @@ export function CreateWebhookModal({ open, onOpenChange, appId }: CreateWebhookM
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
   const [product, setProduct] = useState("");
+  const [verificationToken, setVerificationToken] = useState("");
   const [isTesting, setIsTesting] = useState(false);
   const [testStatus, setTestStatus] = useState<"idle" | "success" | "failed">("idle");
 
   if (!app) return null;
 
-  const enabledProducts = app.products.filter((p) => p.status !== "disabled");
+  const enabledProducts = app.products.filter((p) => p.status !== "disabled" && p.name.toLowerCase() !== "webhooks");
 
   const handleTest = () => {
     if (!url) return;
@@ -65,6 +66,7 @@ export function CreateWebhookModal({ open, onOpenChange, appId }: CreateWebhookM
       setName("");
       setUrl("");
       setProduct("");
+      setVerificationToken("");
       setIsTesting(false);
       setTestStatus("idle");
     }, 200);
@@ -117,6 +119,16 @@ export function CreateWebhookModal({ open, onOpenChange, appId }: CreateWebhookM
                  <><FlaskConical className="h-4 w-4 mr-1" /> Test</>}
               </Button>
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Verification Token</Label>
+            <Input
+              value={verificationToken}
+              onChange={(e) => setVerificationToken(e.target.value)}
+              placeholder="e.g. my-secret-token"
+              className="font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground">Optional token sent with verification requests to validate ownership</p>
           </div>
         </div>
         <DialogFooter>
