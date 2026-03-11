@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { CreateWebhookModal } from "@/components/CreateWebhookModal";
 import {
-  Eye, EyeOff, Copy, Check, Save, Zap, Loader2, Send, FlaskConical, XCircle, CheckCircle2, X,
+  Eye, EyeOff, Copy, Check, Save, Zap, FlaskConical, XCircle, CheckCircle2, X,
   Plus, ArrowLeft, Trash2, Pause, Play,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
