@@ -119,6 +119,16 @@ export function CreateWebhookModal({ open, onOpenChange, appId }: CreateWebhookM
               </Button>
             </div>
           </div>
+          <div className="space-y-2">
+            <Label>Verification Token</Label>
+            <Input
+              value={verificationToken}
+              onChange={(e) => setVerificationToken(e.target.value)}
+              placeholder="e.g. my-secret-token"
+              className="font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground">Optional token sent with verification requests to validate ownership</p>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={handleClose}>Cancel</Button>
