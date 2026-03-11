@@ -171,14 +171,29 @@ export default function Webhooks() {
     });
   };
 
-  const handleSendPayload = () => {
+  const handleSendPayload = async () => {
     const eventId = testModalEvent;
+    const endpoint = app.webhookEndpoints.find((w) => w.id === selectedEndpoint?.id);
+    if (!endpoint || !eventId) return;
     setTestModalEvent(null);
     setIsSendingPayload(true);
-    setTimeout(() => {
+    try {
+      const payload = getPayloadForEvent(eventId);
+      const res = await fetch(endpoint.url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      });
+      if (res.ok) {
+        toast({ title: "Test event sent", description: `${eventId} payload delivered — HTTP ${res.status}` });
+      } else {
+        toast({ title: "Delivery failed", description: `Endpoint returned HTTP ${res.status}`, variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Delivery failed", description: "Network error — ensure your endpoint has CORS headers", variant: "destructive" });
+    } finally {
       setIsSendingPayload(false);
-      toast({ title: "Test event sent", description: `A test ${eventId} payload was delivered to your endpoint` });
-    }, 1500);
+    }
   };
 
   const handleCopyPayload = () => {
