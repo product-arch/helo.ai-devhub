@@ -1,63 +1,35 @@
+# Fix: Webhook Delivery from Lovable Preview
 
+## Root Cause
 
-# Sidebar Text Format Improvements
+The Lovable preview sandbox runs inside an iframe with a restrictive **Content Security Policy** that blocks `fetch()` calls to arbitrary external domains like your Cloudflare Worker. This is a platform-level restriction — no amount of CORS configuration on your Worker will fix it. The browser simply refuses to make the request.
 
-## What Changes
+## Solution
 
-Based on the reference image, the sidebar navigation items should be organized into labeled groups with uppercase section headers, matching the grouped structure shown. The current flat list of nav items will be split into groups with section labels.
+Since we can't make direct outbound requests from the preview sandbox, we'll take a practical approach with two changes:
 
-Mapping existing items to groups based on the reference:
+### 1. Replace "Send Payload" with "Copy as cURL"
 
-**OVERVIEW** (uppercase label)
-- Dashboard (currently "Overview") → keep as "Overview" since that's the existing route
-- Products
+Instead of trying to `fetch()` from the browser, generate a ready-to-paste `curl` command that the user can run from their terminal. This is actually how most real developer consoles work (e.g., Stripe, Twilio).
 
-**DEVELOPER** (uppercase label)
-- API Credentials (maps to "Auth & API Keys")
-- Webhooks
-- Logs & Events (maps to "Logs")
+- The "Send Payload" button becomes **"Copy cURL Command"**
+- Clicking it copies a complete `curl -X POST ...` command with the JSON payload to clipboard
+- Toast confirms the copy with instructions to paste in terminal
 
-**SETTINGS** (uppercase label)
-- Settings (maps to "Configuration")
-- Users (maps to "Users & Permissions")
+### 2. Keep Verification Test As-Is but with clear error message
 
-## File Changes
+The GET verification test has the same sandbox limitation. Update the error message to explain the sandbox restriction and suggest testing via terminal:
 
-### `src/components/layout/AppSidebar.tsx`
-
-1. Replace the flat `navItems` array with grouped sections:
-```typescript
-const navGroups = [
-  {
-    label: "OVERVIEW",
-    items: [
-      { title: "Overview", url: `${prefix}/overview`, icon: LayoutDashboard },
-      { title: "Products", url: `${prefix}/products`, icon: Box },
-    ],
-  },
-  {
-    label: "DEVELOPER",
-    items: [
-      { title: "API Credentials", url: `${prefix}/credentials`, icon: Key },
-      { title: "Webhooks", url: `${prefix}/webhooks`, icon: Webhook },
-      { title: "Logs & Events", url: `${prefix}/logs`, icon: ScrollText },
-    ],
-  },
-  {
-    label: "SETTINGS",
-    items: [
-      { title: "Settings", url: `${prefix}/settings`, icon: Settings },
-      { title: "Users", url: `${prefix}/users`, icon: Users },
-    ],
-  },
-];
+```
+"The Lovable preview sandbox blocks external requests. 
+Copy the verification URL and test from your terminal."
 ```
 
-2. Update the `<nav>` section to render groups with uppercase labels and spaced sections. Each group gets:
-   - A small uppercase label in muted color (`text-[11px] font-semibold tracking-wider text-muted-foreground uppercase`)
-   - Nav items beneath with slightly larger spacing between groups (`space-y-6` between groups, `space-y-1` within)
+Add a "Copy Test URL" button next to the Test button in the create modal.
 
-3. In collapsed mode, hide the group labels (same as hiding text today).
+### Files Changed
 
-No other files changed. All routing, layout, auth pages, and previous implementations remain exactly as-is.
+- `src/pages/Webhooks.tsx` — replace `handleSendPayload` with clipboard-based cURL generation
+- `src/components/CreateWebhookModal.tsx` — add "Copy Test URL" fallback, improve error message
 
+No replacement required for point number 1. Enable a way to engage the functionality in any manner possible
