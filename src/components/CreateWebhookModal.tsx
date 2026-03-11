@@ -34,14 +34,25 @@ export function CreateWebhookModal({ open, onOpenChange, appId }: CreateWebhookM
 
   const enabledProducts = app.products.filter((p) => p.status !== "disabled" && p.name.toLowerCase() !== "webhooks");
 
-  const handleTest = () => {
+  const handleTest = async () => {
     if (!url) return;
     setIsTesting(true);
     setTestStatus("idle");
-    setTimeout(() => {
+    try {
+      const challenge = Math.random().toString(36).substring(2, 10);
+      const verifyUrl = new URL(url);
+      verifyUrl.searchParams.set("hub.mode", "subscribe");
+      verifyUrl.searchParams.set("hub.verify_token", verificationToken || "");
+      verifyUrl.searchParams.set("hub.challenge", challenge);
+      const res = await fetch(verifyUrl.toString());
+      const body = await res.text();
+      setTestStatus(res.ok && body.trim() === challenge ? "success" : "failed");
+    } catch {
+      setTestStatus("failed");
+      toast({ title: "Test failed", description: "Network error — ensure your endpoint has CORS headers (Access-Control-Allow-Origin: *)", variant: "destructive" });
+    } finally {
       setIsTesting(false);
-      setTestStatus(Math.random() > 0.2 ? "success" : "failed");
-    }, 1500);
+    }
   };
 
   const handleCreate = () => {
