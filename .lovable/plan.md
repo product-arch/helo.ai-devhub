@@ -1,63 +1,29 @@
 
 
-# Sidebar Text Format Improvements
+# Fix Webhook Delivery Failure
 
-## What Changes
+## Problem Analysis
 
-Based on the reference image, the sidebar navigation items should be organized into labeled groups with uppercase section headers, matching the grouped structure shown. The current flat list of nav items will be split into groups with section labels.
+The "Delivery failed — Network error" toast means `fetch()` is throwing an exception (landing in the `catch` block). Your Cloudflare Worker IS being invoked (you see invocation logs), but likely only the OPTIONS preflight request is completing — the actual POST may be failing at the browser level due to a CORS mismatch or the response isn't being read correctly.
 
-Mapping existing items to groups based on the reference:
+Two issues to fix:
 
-**OVERVIEW** (uppercase label)
-- Dashboard (currently "Overview") → keep as "Overview" since that's the existing route
-- Products
+### Issue 1: POST Delivery Error Handling
+The current `catch` block swallows the actual error. We need to log it and also try the request with explicit CORS mode and handle potential response parsing issues.
 
-**DEVELOPER** (uppercase label)
-- API Credentials (maps to "Auth & API Keys")
-- Webhooks
-- Logs & Events (maps to "Logs")
+### Issue 2: Cloudflare Worker Logs
+`console.log()` in Cloudflare Workers only appears in **real-time log streaming** (`wrangler tail` in CLI) — not in the dashboard's standard invocation logs view. This is expected Cloudflare behavior, not a code issue.
 
-**SETTINGS** (uppercase label)
-- Settings (maps to "Configuration")
-- Users (maps to "Users & Permissions")
+## Changes
 
-## File Changes
+### `src/pages/Webhooks.tsx` — `handleSendPayload`
+- Add explicit `mode: 'cors'` to the fetch request
+- Log the actual error in the `catch` block to help debug
+- Show the actual error message in the toast instead of the generic CORS message
 
-### `src/components/layout/AppSidebar.tsx`
+### `src/components/CreateWebhookModal.tsx` — `handleTest`
+- Same improvements: log actual error, show real error message in toast
 
-1. Replace the flat `navItems` array with grouped sections:
-```typescript
-const navGroups = [
-  {
-    label: "OVERVIEW",
-    items: [
-      { title: "Overview", url: `${prefix}/overview`, icon: LayoutDashboard },
-      { title: "Products", url: `${prefix}/products`, icon: Box },
-    ],
-  },
-  {
-    label: "DEVELOPER",
-    items: [
-      { title: "API Credentials", url: `${prefix}/credentials`, icon: Key },
-      { title: "Webhooks", url: `${prefix}/webhooks`, icon: Webhook },
-      { title: "Logs & Events", url: `${prefix}/logs`, icon: ScrollText },
-    ],
-  },
-  {
-    label: "SETTINGS",
-    items: [
-      { title: "Settings", url: `${prefix}/settings`, icon: Settings },
-      { title: "Users", url: `${prefix}/users`, icon: Users },
-    ],
-  },
-];
-```
-
-2. Update the `<nav>` section to render groups with uppercase labels and spaced sections. Each group gets:
-   - A small uppercase label in muted color (`text-[11px] font-semibold tracking-wider text-muted-foreground uppercase`)
-   - Nav items beneath with slightly larger spacing between groups (`space-y-6` between groups, `space-y-1` within)
-
-3. In collapsed mode, hide the group labels (same as hiding text today).
-
-No other files changed. All routing, layout, auth pages, and previous implementations remain exactly as-is.
+### Both files
+- Wrap in try/catch with `error.message` surfaced to the user so we can see what's actually failing (e.g., `TypeError: Failed to fetch` vs a specific CORS error)
 
