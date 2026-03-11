@@ -66,6 +66,7 @@ export function CreateWebhookModal({ open, onOpenChange, appId }: CreateWebhookM
       setName("");
       setUrl("");
       setProduct("");
+      setVerificationToken("");
       setIsTesting(false);
       setTestStatus("idle");
     }, 200);
