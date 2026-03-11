@@ -171,32 +171,15 @@ export default function Webhooks() {
     });
   };
 
-  const handleSendPayload = async () => {
+  const handleCopyCurl = () => {
     const eventId = testModalEvent;
     const endpoint = app.webhookEndpoints.find((w) => w.id === selectedEndpoint?.id);
     if (!endpoint || !eventId) return;
+    const payload = getPayloadForEvent(eventId);
+    const curl = `curl -X POST '${endpoint.url}' \\\n  -H 'Content-Type: application/json' \\\n  -d '${payload.replace(/'/g, "'\\''")}'`;
+    navigator.clipboard.writeText(curl);
+    toast({ title: "cURL copied", description: "Paste in your terminal to send the test payload" });
     setTestModalEvent(null);
-    setIsSendingPayload(true);
-    try {
-      const payload = getPayloadForEvent(eventId);
-      const res = await fetch(endpoint.url, {
-        method: "POST",
-        mode: "cors",
-        headers: { "Content-Type": "application/json" },
-        body: payload,
-      });
-      if (res.ok) {
-        toast({ title: "Test event sent", description: `${eventId} payload delivered — HTTP ${res.status}` });
-      } else {
-        toast({ title: "Delivery failed", description: `Endpoint returned HTTP ${res.status}`, variant: "destructive" });
-      }
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : "Unknown error";
-      console.error("Webhook delivery error:", error);
-      toast({ title: "Delivery failed", description: `Network error: ${msg}`, variant: "destructive" });
-    } finally {
-      setIsSendingPayload(false);
-    }
   };
 
   const handleCopyPayload = () => {
