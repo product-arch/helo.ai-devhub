@@ -1,63 +1,51 @@
 
 
-# Sidebar Text Format Improvements
+# Real Webhook Functionality
 
 ## What Changes
 
-Based on the reference image, the sidebar navigation items should be organized into labeled groups with uppercase section headers, matching the grouped structure shown. The current flat list of nav items will be split into groups with section labels.
+Replace the mocked `setTimeout`/`Math.random()` logic in two places with real HTTP calls to the configured webhook endpoint URL.
 
-Mapping existing items to groups based on the reference:
+### 1. Endpoint Verification (`CreateWebhookModal.tsx` — Test button)
 
-**OVERVIEW** (uppercase label)
-- Dashboard (currently "Overview") → keep as "Overview" since that's the existing route
-- Products
+The "Test" button will send a real GET request mimicking Meta's webhook verification handshake:
 
-**DEVELOPER** (uppercase label)
-- API Credentials (maps to "Auth & API Keys")
-- Webhooks
-- Logs & Events (maps to "Logs")
-
-**SETTINGS** (uppercase label)
-- Settings (maps to "Configuration")
-- Users (maps to "Users & Permissions")
-
-## File Changes
-
-### `src/components/layout/AppSidebar.tsx`
-
-1. Replace the flat `navItems` array with grouped sections:
-```typescript
-const navGroups = [
-  {
-    label: "OVERVIEW",
-    items: [
-      { title: "Overview", url: `${prefix}/overview`, icon: LayoutDashboard },
-      { title: "Products", url: `${prefix}/products`, icon: Box },
-    ],
-  },
-  {
-    label: "DEVELOPER",
-    items: [
-      { title: "API Credentials", url: `${prefix}/credentials`, icon: Key },
-      { title: "Webhooks", url: `${prefix}/webhooks`, icon: Webhook },
-      { title: "Logs & Events", url: `${prefix}/logs`, icon: ScrollText },
-    ],
-  },
-  {
-    label: "SETTINGS",
-    items: [
-      { title: "Settings", url: `${prefix}/settings`, icon: Settings },
-      { title: "Users", url: `${prefix}/users`, icon: Users },
-    ],
-  },
-];
+```
+GET {url}?hub.mode=subscribe&hub.verify_token={verificationToken}&hub.challenge={randomChallenge}
 ```
 
-2. Update the `<nav>` section to render groups with uppercase labels and spaced sections. Each group gets:
-   - A small uppercase label in muted color (`text-[11px] font-semibold tracking-wider text-muted-foreground uppercase`)
-   - Nav items beneath with slightly larger spacing between groups (`space-y-6` between groups, `space-y-1` within)
+- If the response status is 200 and body matches the challenge string → **Verified**
+- Otherwise → **Failed**
+- Uses the verification token field value (falls back to empty string if not set)
 
-3. In collapsed mode, hide the group labels (same as hiding text today).
+### 2. Test Payload Delivery (`Webhooks.tsx` — Send Payload button)
 
-No other files changed. All routing, layout, auth pages, and previous implementations remain exactly as-is.
+The "Send Payload" button will POST the JSON payload to the selected endpoint's URL:
+
+```
+POST {endpoint.url}
+Content-Type: application/json
+Body: { object: "whatsapp_business_account", entry: [...] }
+```
+
+- If response status is 200 → success toast
+- Otherwise → error toast with status code
+
+### 3. CORS Consideration
+
+Browser-to-Worker requests require CORS headers. The user's Cloudflare Worker needs these headers added to responses:
+
+```javascript
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+```
+
+Plus an OPTIONS preflight handler. I'll note this in the implementation if requests fail, but the code will use real `fetch()` calls with error handling for network/CORS failures.
+
+### Files Changed
+- `src/components/CreateWebhookModal.tsx` — real GET verification in `handleTest`
+- `src/pages/Webhooks.tsx` — real POST delivery in `handleSendPayload`
 
