@@ -26,12 +26,13 @@ export function CreateWebhookModal({ open, onOpenChange, appId }: CreateWebhookM
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
   const [product, setProduct] = useState("");
+  const [verificationToken, setVerificationToken] = useState("");
   const [isTesting, setIsTesting] = useState(false);
   const [testStatus, setTestStatus] = useState<"idle" | "success" | "failed">("idle");
 
   if (!app) return null;
 
-  const enabledProducts = app.products.filter((p) => p.status !== "disabled");
+  const enabledProducts = app.products.filter((p) => p.status !== "disabled" && p.name.toLowerCase() !== "webhooks");
 
   const handleTest = () => {
     if (!url) return;
