@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { whatsappApis } from "@/data/whatsappApis";
 import { rcsApis } from "@/data/rcsApis";
 import { ApiCatalog } from "@/components/WhatsAppApiCatalog";
+import { WhatsAppGettingStarted } from "@/components/WhatsAppGettingStarted";
 
 interface EndpointDef {
   id: string;
