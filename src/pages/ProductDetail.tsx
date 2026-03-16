@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { whatsappApis } from "@/data/whatsappApis";
 import { rcsApis } from "@/data/rcsApis";
 import { ApiCatalog } from "@/components/WhatsAppApiCatalog";
+import { WhatsAppGettingStarted } from "@/components/WhatsAppGettingStarted";
 
 interface EndpointDef {
   id: string;
@@ -61,19 +62,13 @@ export default function ProductDetail() {
 
   if (!app || !product) return <Navigate to={appId ? `/apps/${appId}/overview` : "/apps"} replace />;
 
-  // WhatsApp gets the API catalog view
+  // WhatsApp gets the Getting Started page
   if (productId === "whatsapp") {
-    const essentialApis = whatsappApis.filter((a) => a.isEssential);
-    const advancedApis = whatsappApis.filter((a) => !a.isEssential);
-
     return (
-      <ApiCatalog
+      <WhatsAppGettingStarted
         app={app}
         appId={appId!}
         product={product}
-        essentialApis={essentialApis}
-        advancedApis={advancedApis}
-        title="WhatsApp Messaging"
       />
     );
   }
