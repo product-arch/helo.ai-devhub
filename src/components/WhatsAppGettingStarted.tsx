@@ -396,15 +396,25 @@ export function WhatsAppGettingStarted({ app, appId, product }: Props) {
                 </TabsContent>
               </Tabs>
 
-              <Button
-                className="w-full"
-                size="lg"
-                onClick={handleSend}
-                disabled={sending}
-              >
-                {sending ? "Sending…" : "Send request"}
-                <Send className="ml-2 h-4 w-4" />
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  className="flex-1"
+                  size="lg"
+                  onClick={handleSend}
+                  disabled={sending}
+                >
+                  {sending ? "Sending…" : "Send request"}
+                  <Send className="ml-2 h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => {}}
+                >
+                  Go to API Docs
+                  <ExternalLink className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
