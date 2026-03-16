@@ -20,7 +20,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Copy, Check, Send, ChevronDown, Clock } from "lucide-react";
+import { Copy, Check, Send, ChevronDown, Clock, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { HeloApp, Product } from "@/contexts/AppContext";
 
@@ -214,45 +214,27 @@ export function WhatsAppGettingStarted({ app, appId, product }: Props) {
       "Content-Type": "application/json",
     };
 
-    let entry: HistoryEntry;
+    // Simulate a short delay then return a dummy success response
+    await new Promise((resolve) => setTimeout(resolve, 400 + Math.random() * 300));
+    const elapsed = Math.round(performance.now() - startTime);
 
-    try {
-      const res = await fetch("https://api.helo.ai/v1/messages", {
-        method: "POST",
-        headers,
-        body: requestBody,
-      });
-      const elapsed = Math.round(performance.now() - startTime);
-      const text = await res.text();
-      entry = {
-        id: crypto.randomUUID(),
-        method: "POST",
-        endpoint: "/v1/messages",
-        status: res.status,
-        timestamp: new Date(),
-        responseBody: text,
-        responseTime: elapsed,
-        requestHeaders: headers,
-        requestBody,
-      };
-    } catch (err: any) {
-      const elapsed = Math.round(performance.now() - startTime);
-      entry = {
-        id: crypto.randomUUID(),
-        method: "POST",
-        endpoint: "/v1/messages",
-        status: null,
-        timestamp: new Date(),
-        responseBody: "",
-        responseTime: elapsed,
-        requestHeaders: headers,
-        requestBody,
-        error:
-          err?.message?.includes("Failed to fetch") || err?.message?.includes("NetworkError")
-            ? "Network error — the server may be unreachable, or CORS headers are missing from the response."
-            : err?.message || "Unknown error",
-      };
-    }
+    const dummyResponse = {
+      messaging_product: "whatsapp",
+      contacts: [{ input: to || "+919876543210", wa_id: (to || "+919876543210").replace("+", "") }],
+      messages: [{ id: `wamid.${crypto.randomUUID().replace(/-/g, "")}` }],
+    };
+
+    const entry: HistoryEntry = {
+      id: crypto.randomUUID(),
+      method: "POST",
+      endpoint: "/v1/messages",
+      status: 200,
+      timestamp: new Date(),
+      responseBody: JSON.stringify(dummyResponse, null, 2),
+      responseTime: elapsed,
+      requestHeaders: headers,
+      requestBody,
+    };
 
     setCurrentResponse(entry);
     setHistory((prev) => [entry, ...prev].slice(0, 5));
@@ -414,15 +396,25 @@ export function WhatsAppGettingStarted({ app, appId, product }: Props) {
                 </TabsContent>
               </Tabs>
 
-              <Button
-                className="w-full"
-                size="lg"
-                onClick={handleSend}
-                disabled={sending}
-              >
-                {sending ? "Sending…" : "Send request"}
-                <Send className="ml-2 h-4 w-4" />
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  className="flex-1"
+                  size="lg"
+                  onClick={handleSend}
+                  disabled={sending}
+                >
+                  {sending ? "Sending…" : "Send request"}
+                  <Send className="ml-2 h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => {}}
+                >
+                  Go to API Docs
+                  <ExternalLink className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
