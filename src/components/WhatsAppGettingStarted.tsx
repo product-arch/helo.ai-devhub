@@ -20,7 +20,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Copy, Check, Send, ChevronDown, Clock } from "lucide-react";
+import { Copy, Check, Send, ChevronDown, Clock, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { HeloApp, Product } from "@/contexts/AppContext";
 
