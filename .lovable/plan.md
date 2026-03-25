@@ -1,57 +1,57 @@
 
 
-# Consent Flow Preview — OAuth 2.0 Authorization Code
+# Dummy Consent Screen for OAuth 2.0 Authorization Code Flow
 
 ## Overview
 
-Add a "Consent Flow Preview" component that lets developers preview and trigger the OAuth authorization consent screen. It appears in three places with varying presentation.
+Create a standalone page at `/oauth/authorize` that simulates the helo.ai consent screen. When the "Open Consent Screen" button is clicked in `ConsentFlowPreview`, it opens this page (instead of a dead link), rendering a realistic OAuth consent UI using the query parameters from the URL.
 
-## New Component: `src/components/ConsentFlowPreview.tsx`
+## New File: `src/pages/OAuthConsent.tsx`
 
-A reusable component accepting credential data and a `collapsible` prop.
-
-**Inputs**: `credential: AppCredential`, `collapsible?: boolean` (default false)
-
-**Renders**:
-- **When credential has no `authorization_code` grant**: Show muted note: "Consent flow is not applicable for Client Credentials grant. Add Authorization Code grant to enable this."
-- **When credential is Suspended/Revoked**: Show greyed-out URL block, disabled button labelled "Credential is not Active", and explanatory note.
-- **Active with Authorization Code grant**:
-  1. Section title "Consent Flow Preview" + subtitle
-  2. If multiple redirect URIs: a Select dropdown to pick one (defaults to first)
-  3. Monospace code block showing the constructed URL with copy button — URL updates in real time when redirect URI changes
-  4. PKCE `code_challenge` auto-generated via `crypto.subtle` on mount (SHA-256 of random verifier, base64url-encoded). Info tooltip on the parameter explaining auto-generation.
-  5. "Open Consent Screen" primary button — opens URL in new tab
-  6. Informational note about live flow, redirect URI reachability, and 10-minute code expiry
-
-## Integration Points
-
-### 1. Post-Creation Modal (`CreateCredentialModal.tsx`, step 4)
-
-After the Client ID / Client Secret `SecretRow` blocks, when the created credential is OAuth 2.0 with `authorization_code` grant:
-- Add a Collapsible section (collapsed by default) labelled "Test your consent flow"
-- When expanded, render `<ConsentFlowPreview credential={createdCredential} collapsible />`
-- Simplified note: "Use this URL to preview the consent screen. Make sure your redirect URI is reachable before testing."
-
-### 2. Credential Detail Side Panel (`CredentialDetailPanel.tsx`)
-
-Inside the OAuth 2.0 details block (after redirect URIs list, around line 220):
-- Render `<ConsentFlowPreview credential={credential} />` as a persistent, always-visible sub-section (not collapsible)
-
-## PKCE Generation Logic
+A standalone page (no dashboard layout) that reads URL query params (`client_id`, `scope`, `redirect_uri`) and renders:
 
 ```text
-1. Generate random 32-byte verifier → base64url encode
-2. SHA-256 hash the verifier → base64url encode → code_challenge
-3. Regenerate on every mount / panel open
+┌─────────────────────────────────────┐
+│         helo.ai logo/wordmark       │
+│                                     │
+│   "App Name" is requesting access   │
+│   to your account                   │
+│                                     │
+│   This application would like to:   │
+│   ✓ scope.one                       │
+│   ✓ scope.two                       │
+│   ✓ scope.three                     │
+│                                     │
+│   Redirect URI: https://...         │
+│                                     │
+│   [Deny]              [Allow]       │
+│                                     │
+│   By approving, you agree to share  │
+│   the listed permissions.           │
+│   ─────────────────────────────────  │
+│   Powered by helo.ai               │
+└─────────────────────────────────────┘
 ```
 
-Uses `crypto.getRandomValues` + `crypto.subtle.digest` (Web Crypto API). Falls back to a static placeholder if unavailable.
+- Parse `scope` param → split by space → display as checklist items
+- Show `client_id` and `redirect_uri` in muted monospace
+- **Allow** button: redirects to `redirect_uri?code=MOCK_AUTH_CODE_xxxxx&state=...`
+- **Deny** button: redirects to `redirect_uri?error=access_denied`
+- Clean, centered card layout on a subtle grey background
+
+## Route Addition: `src/App.tsx`
+
+Add a public route: `<Route path="/oauth/authorize" element={<OAuthConsent />} />`
+
+## Update: `src/components/ConsentFlowPreview.tsx`
+
+Change the auth URL base from `https://auth.helo.ai/oauth/authorize` to a relative `/oauth/authorize` so clicking "Open Consent Screen" opens the dummy page within the app's preview.
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `src/components/ConsentFlowPreview.tsx` | New component |
-| `src/components/CreateCredentialModal.tsx` | Add collapsible consent preview in step 4 for OAuth auth_code |
-| `src/components/CredentialDetailPanel.tsx` | Add persistent consent preview after OAuth redirect URIs |
+| `src/pages/OAuthConsent.tsx` | New dummy consent screen page |
+| `src/App.tsx` | Add `/oauth/authorize` route |
+| `src/components/ConsentFlowPreview.tsx` | Update URL base to relative path |
 
