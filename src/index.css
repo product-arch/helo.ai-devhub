@@ -36,6 +36,13 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 98%;
 
+    --role-admin: 36 80% 56%;
+    --role-admin-foreground: 36 80% 30%;
+    --role-developer: 210 50% 55%;
+    --role-developer-foreground: 210 50% 30%;
+    --role-viewer: 0 0% 58%;
+    --role-viewer-foreground: 0 0% 35%;
+
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
     --ring: 240 5.9% 10%;
@@ -98,6 +105,13 @@
 
     --warning: 38 60% 45%;
     --warning-foreground: 0 0% 4%;
+
+    --role-admin: 36 60% 50%;
+    --role-admin-foreground: 36 60% 75%;
+    --role-developer: 210 35% 50%;
+    --role-developer-foreground: 210 35% 75%;
+    --role-viewer: 0 0% 45%;
+    --role-viewer-foreground: 0 0% 70%;
 
     --border: 0 0% 16%;
     --input: 0 0% 16%;

@@ -44,6 +44,18 @@ export default {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
         },
+        "role-admin": {
+          DEFAULT: "hsl(var(--role-admin))",
+          foreground: "hsl(var(--role-admin-foreground))",
+        },
+        "role-developer": {
+          DEFAULT: "hsl(var(--role-developer))",
+          foreground: "hsl(var(--role-developer-foreground))",
+        },
+        "role-viewer": {
+          DEFAULT: "hsl(var(--role-viewer))",
+          foreground: "hsl(var(--role-viewer-foreground))",
+        },
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",

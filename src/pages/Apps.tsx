@@ -209,7 +209,7 @@ export default function Apps() {
                     <Badge variant="outline" className={`text-[10px] ${envColors[app.environment]}`}>
                       {app.environment}
                     </Badge>
-                    <Badge variant="outline" className="flex items-center gap-1 text-[10px] bg-warning/10 text-warning border-warning/20">
+                    <Badge variant="outline" className="flex items-center gap-1 text-[10px] bg-role-admin/10 text-role-admin-foreground border-role-admin/20">
                       <ShieldCheck className="h-3 w-3" />Admin
                     </Badge>
                   </div>
