@@ -1,114 +1,18 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useApp, AppCredential } from "@/contexts/AppContext";
 import { usePermission } from "@/hooks/usePermission";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { StatusBadge } from "@/components/StatusBadge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { CredentialCard } from "@/components/CredentialCard";
 import { CreateCredentialModal } from "@/components/CreateCredentialModal";
 import { CredentialDetailPanel } from "@/components/CredentialDetailPanel";
 import { AuditLogDrawer } from "@/components/AuditLogDrawer";
-import {
-  Eye, EyeOff, Copy, Check, RefreshCw, Trash2, AlertTriangle,
-  CheckCircle2, XCircle, Lock, Pause, Shield, ChevronDown, Play, Plus, ArrowLeft,
-} from "lucide-react";
+import { AlertTriangle, Shield, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import type { Product } from "@/contexts/AppContext";
-
-// --- Mocked data ---
-
-const MOCK_USAGE = {
-  requests24h: "12,847",
-  errorRate: "0.3%",
-  rateLimit: "1,000 RPM",
-  topEndpoint: "POST /v1/sms/send",
-};
-
-const MOCK_ERRORS = [
-  { timestamp: "Feb 20, 14:32", endpoint: "/v1/sms/send", status: 429, error: "Rate limit exceeded" },
-  { timestamp: "Feb 20, 14:10", endpoint: "/v1/wa/template", status: 403, error: "Capability not enabled" },
-  { timestamp: "Feb 20, 12:55", endpoint: "/v1/rcs/send", status: 400, error: "Invalid recipient format" },
-  { timestamp: "Feb 20, 11:03", endpoint: "/v1/sms/send", status: 500, error: "Upstream provider timeout" },
-  { timestamp: "Feb 20, 09:47", endpoint: "/v1/wa/template", status: 401, error: "Invalid API key" },
-];
-
-const MOCK_AUDIT = [
-  { timestamp: "Jan 15, 2026 09:00", actor: "admin@acme.com", action: "Key created", prev: "—", next: "Active" },
-  { timestamp: "Jan 28, 2026 14:22", actor: "admin@acme.com", action: "Key rotated", prev: "Active", next: "Active (new key)" },
-  { timestamp: "Feb 05, 2026 11:15", actor: "admin@acme.com", action: "Key suspended", prev: "Active", next: "Suspended" },
-  { timestamp: "Feb 05, 2026 16:40", actor: "admin@acme.com", action: "Key reactivated", prev: "Suspended", next: "Active" },
-  { timestamp: "Feb 12, 2026 08:30", actor: "system", action: "IP change detected", prev: "203.0.113.10", next: "198.51.100.22" },
-  { timestamp: "Feb 18, 2026 10:05", actor: "admin@acme.com", action: "Key rotated", prev: "Active", next: "Active (new key)" },
-];
-
-const CHANNEL_EXAMPLES: Record<string, { endpoint: string; body: string }> = {
-  sms: {
-    endpoint: "POST /v1/sms/send",
-    body: `{
-    "to": "+1234567890",
-    "message": "Hello from helo.ai!"
-  }`,
-  },
-  rcs: {
-    endpoint: "POST /v1/rcs/send",
-    body: `{
-    "to": "+1234567890",
-    "message": {
-      "contentType": "richCard",
-      "title": "Order Update",
-      "description": "Your order #1234 has shipped.",
-      "media": "https://cdn.example.com/image.jpg",
-      "suggestions": [
-        { "text": "Track Order", "postbackData": "track_1234" }
-      ]
-    }
-  }`,
-  },
-  whatsapp: {
-    endpoint: "POST /v1/wa/template/send",
-    body: `{
-    "to": "+1234567890",
-    "template": {
-      "name": "order_confirmation",
-      "language": "en",
-      "components": [
-        { "type": "body", "parameters": [{ "type": "text", "text": "#1234" }] }
-      ]
-    }
-  }`,
-  },
-  webhooks: {
-    endpoint: "POST /v1/webhooks/subscribe",
-    body: `{
-    "url": "https://api.example.com/webhooks/helo",
-    "events": [
-      "message.sent",
-      "message.delivered",
-      "message.failed"
-    ]
-  }`,
-  },
-};
-
-const CHANNEL_PRODUCT_MAP: Record<string, string> = {
-  sms: "sms",
-  rcs: "rcs",
-  whatsapp: "whatsapp",
-  webhooks: "webhooks",
-};
 
 // --- Component ---
 
