@@ -163,63 +163,59 @@ export default function Apps() {
             const enabledCount = app.products.filter((p) => p.status !== "disabled").length;
             return (
               <Card key={app.id} className="hover:border-foreground/20 transition-colors cursor-pointer" onClick={() => handleSelectApp(app.id)}>
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between mb-3">
+                <CardContent className="p-5">
+                  {/* Top row: icon + name | health + menu */}
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="p-2 rounded-lg bg-muted">
                         <Box className="h-5 w-5" />
                       </div>
-                      <div>
-                        <h3 className="font-medium">{app.name}</h3>
-                        <p className="text-[11px] font-mono text-muted-foreground mt-0.5">{app.id}</p>
-                        {app.description && (
-                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{app.description}</p>
-                        )}
-                        <Badge variant="outline" className={`mt-1 text-[10px] ${envColors[app.environment]}`}>
-                          {app.environment}
-                        </Badge>
-                      </div>
+                      <h3 className="font-medium">{app.name}</h3>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <div className="flex flex-col items-end gap-1.5 mr-1">
-                        {app.status === "healthy" ? (
-                          <CheckCircle2 className="h-4 w-4 text-success" />
-                        ) : (
-                          <AlertTriangle className="h-4 w-4 text-warning" />
-                        )}
-                        <Badge variant="outline" className="flex items-center gap-1 text-[10px] bg-warning/10 text-warning border-warning/20">
-                          <ShieldCheck className="h-3 w-3" />
-                          Admin
-                        </Badge>
-                      </div>
+                    <div className="flex items-center gap-1">
+                      {app.status === "healthy" ? (
+                        <CheckCircle2 className="h-4 w-4 text-success" />
+                      ) : (
+                        <AlertTriangle className="h-4 w-4 text-warning" />
+                      )}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={(e) => e.stopPropagation()}
-                          >
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                           <DropdownMenuItem onClick={() => handleDuplicateApp(app.id)}>
-                            <Copy className="h-4 w-4 mr-2" />
-                            Duplicate App
+                            <Copy className="h-4 w-4 mr-2" />Duplicate App
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => setDeleteAppId(app.id)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete App
+                          <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setDeleteAppId(app.id)}>
+                            <Trash2 className="h-4 w-4 mr-2" />Delete App
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+
+                  {/* Body: ID + description */}
+                  <div className="mt-2 ml-[44px]">
+                    <p className="text-[11px] font-mono text-muted-foreground">{app.id}</p>
+                    {app.description && (
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{app.description}</p>
+                    )}
+                  </div>
+
+                  {/* Badges row */}
+                  <div className="flex items-center gap-2 mt-3 ml-[44px]">
+                    <Badge variant="outline" className={`text-[10px] ${envColors[app.environment]}`}>
+                      {app.environment}
+                    </Badge>
+                    <Badge variant="outline" className="flex items-center gap-1 text-[10px] bg-warning/10 text-warning border-warning/20">
+                      <ShieldCheck className="h-3 w-3" />Admin
+                    </Badge>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between text-sm text-muted-foreground pt-3 mt-4 border-t border-border">
                     <span>{enabledCount} of {app.products.length} products enabled</span>
                     <span className="text-xs">{app.status === "healthy" ? "Healthy" : "Action required"}</span>
                   </div>
