@@ -10,7 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Key, Globe, Server, Copy, Check, AlertTriangle, ArrowRight, ArrowLeft, CheckCircle2, X, Loader2 } from "lucide-react";
+import { Key, Globe, Server, Copy, Check, AlertTriangle, ArrowRight, ArrowLeft, CheckCircle2, X, Loader2, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ConsentFlowPreview } from "@/components/ConsentFlowPreview";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -598,6 +600,18 @@ export function CreateCredentialModal({ open, onOpenChange, appId }: CreateCrede
                   <p className="text-xs text-muted-foreground">Public key has been registered. Sign JWTs with your private key using RS256 for authentication.</p>
                 </div>
               </>
+            )}
+
+            {createdCredential.type === "oauth2" && createdCredential.grantTypes?.includes("authorization_code") && (
+              <Collapsible>
+                <CollapsibleTrigger className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline w-full py-1">
+                  <ChevronDown className="h-3 w-3 transition-transform [[data-state=open]_&]:rotate-180" />
+                  Test your consent flow
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-2">
+                  <ConsentFlowPreview credential={createdCredential} collapsible />
+                </CollapsibleContent>
+              </Collapsible>
             )}
 
             <div className="rounded-md border p-3 space-y-1">

@@ -12,6 +12,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { StepUpAuthModal } from "@/components/StepUpAuthModal";
+import { ConsentFlowPreview } from "@/components/ConsentFlowPreview";
 import {
   Copy, Check, Key, Globe, Server, Pause, Play, RefreshCw, XCircle, Trash2,
   Clock, User, Pencil,
@@ -225,6 +226,7 @@ export function CredentialDetailPanel({
                     {credential.thirdPartyAppName}
                   </div>
                 )}
+                <ConsentFlowPreview credential={credential} />
               </div>
             )}
 
