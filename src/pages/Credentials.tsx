@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { CredentialCard } from "@/components/CredentialCard";
 import { CreateCredentialModal } from "@/components/CreateCredentialModal";
+import { CredentialDetailPanel } from "@/components/CredentialDetailPanel";
 import {
   Eye, EyeOff, Copy, Check, RefreshCw, Trash2, AlertTriangle,
   CheckCircle2, XCircle, Lock, Pause, Shield, ChevronDown, Play, Plus, ArrowLeft,
@@ -735,6 +736,48 @@ export default function Credentials() {
       </div>
 
       <CreateCredentialModal open={createModalOpen} onOpenChange={setCreateModalOpen} appId={app.id} />
+
+      <CredentialDetailPanel
+        credential={selectedCredential}
+        open={!!selectedCredential}
+        onOpenChange={(open) => { if (!open) setSelectedCredential(null); }}
+        isAdmin={isAdmin}
+        onRotate={() => {
+          if (selectedCredential) {
+            rotateCredential(app.id, selectedCredential.id);
+            toast({ title: "Credential rotated" });
+          }
+        }}
+        onSuspend={() => {
+          if (selectedCredential) {
+            if (selectedCredential.status === "suspended") {
+              updateCredential(app.id, selectedCredential.id, { status: "active" });
+              toast({ title: "Credential reactivated" });
+            } else {
+              suspendCredential(app.id, selectedCredential.id);
+              toast({ title: "Credential suspended" });
+            }
+          }
+        }}
+        onRevoke={() => {
+          if (selectedCredential) {
+            revokeCredential(app.id, selectedCredential.id);
+            toast({ title: "Credential revoked", variant: "destructive" });
+          }
+        }}
+        onDelete={() => {
+          if (selectedCredential) {
+            deleteCredential(app.id, selectedCredential.id);
+            toast({ title: "Credential deleted" });
+            setSelectedCredential(null);
+          }
+        }}
+        onUpdateName={(name) => {
+          if (selectedCredential) {
+            updateCredential(app.id, selectedCredential.id, { name });
+          }
+        }}
+      />
     </DashboardLayout>
   );
 }
