@@ -50,8 +50,8 @@ export function EmailTagInput({ users, onChange, placeholder = "user@example.com
   };
 
   const roleBadgeClass: Record<UserRole, string> = {
-    admin: "bg-warning/10 text-warning border-warning/20",
-    developer: "bg-primary/10 text-primary border-primary/20",
+    admin: "bg-role-admin/10 text-role-admin-foreground border-role-admin/20",
+    developer: "bg-role-developer/10 text-role-developer-foreground border-role-developer/20",
   };
 
   return (

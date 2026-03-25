@@ -35,17 +35,17 @@ const ROLE_CONFIG: Record<AppRole, { label: string; icon: React.ElementType; cla
   admin: {
     label: "Admin",
     icon: ShieldCheck,
-    className: "bg-warning/10 text-warning border-warning/20",
+    className: "bg-role-admin/10 text-role-admin-foreground border-role-admin/20",
   },
   developer: {
     label: "Developer",
     icon: Code2,
-    className: "bg-primary/10 text-primary border-primary/20",
+    className: "bg-role-developer/10 text-role-developer-foreground border-role-developer/20",
   },
   viewer: {
     label: "Viewer",
     icon: Eye,
-    className: "bg-secondary text-secondary-foreground border-border",
+    className: "bg-role-viewer/10 text-role-viewer-foreground border-role-viewer/20",
   },
 };
 
