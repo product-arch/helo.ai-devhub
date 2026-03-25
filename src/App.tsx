@@ -45,6 +45,7 @@ function AppRoutes() {
       <Route path="/mfa" element={<PublicRoute><MfaVerify /></PublicRoute>} />
       <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
       <Route path="/sso" element={<PublicRoute><SsoLogin /></PublicRoute>} />
+      <Route path="/oauth/authorize" element={<OAuthConsent />} />
       <Route path="/apps" element={<ProtectedRoute><Apps /></ProtectedRoute>} />
       <Route path="/apps/:appId/overview" element={<ProtectedRoute><Overview /></ProtectedRoute>} />
       <Route path="/apps/:appId/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
