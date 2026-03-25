@@ -1,133 +1,57 @@
 
 
-# Enterprise API Credentials Overhaul
+# Consent Flow Preview — OAuth 2.0 Authorization Code
 
-This is a large feature set. I recommend implementing it in 4 phases to keep changes manageable and testable. Here is the full plan.
+## Overview
 
----
+Add a "Consent Flow Preview" component that lets developers preview and trigger the OAuth authorization consent screen. It appears in three places with varying presentation.
 
-## Phase 1 — Credential List Page Enhancements
+## New Component: `src/components/ConsentFlowPreview.tsx`
 
-### Files: `src/pages/Credentials.tsx`, `src/components/CredentialCard.tsx`
+A reusable component accepting credential data and a `collapsible` prop.
 
-**List page additions:**
-- Search bar filtering by credential name
-- Filter dropdowns: Type (All / API Key / OAuth 2.0 / Service Account) and Status (All / Active / Suspended / Expired / Revoked)
-- Summary line below title: "5 credentials · 3 Active · 1 Suspended · 1 Expired"
-- Credential usage counter with progress bar: "14 of 20 credentials used"
-- Expiry notification banners (amber for expiring within 30 days, red for already expired)
-- Credential limit warning at 80%+ usage, disabling Create button at limit
-- All copy scoped to "credentials in this App"
+**Inputs**: `credential: AppCredential`, `collapsible?: boolean` (default false)
 
-**Card redesign (`CredentialCard.tsx`):**
-- Add expiry display: "Permanent" / "Expires in X days" (amber <30d) / "Expired" (red)
-- Show scopes as monospace pill tags
-- Conditionally show "Created by" for Admin role only (passed as prop)
-- Updated 3-dot menu logic:
-  - Rotate: hidden for Revoked/Expired
-  - Suspend/Reactivate: contextual
-  - View Audit Log: always shown
-  - Revoke: shown for Active/Suspended/Expired, styled red
-  - Delete: only shown when Revoked, styled grey
+**Renders**:
+- **When credential has no `authorization_code` grant**: Show muted note: "Consent flow is not applicable for Client Credentials grant. Add Authorization Code grant to enable this."
+- **When credential is Suspended/Revoked**: Show greyed-out URL block, disabled button labelled "Credential is not Active", and explanatory note.
+- **Active with Authorization Code grant**:
+  1. Section title "Consent Flow Preview" + subtitle
+  2. If multiple redirect URIs: a Select dropdown to pick one (defaults to first)
+  3. Monospace code block showing the constructed URL with copy button — URL updates in real time when redirect URI changes
+  4. PKCE `code_challenge` auto-generated via `crypto.subtle` on mount (SHA-256 of random verifier, base64url-encoded). Info tooltip on the parameter explaining auto-generation.
+  5. "Open Consent Screen" primary button — opens URL in new tab
+  6. Informational note about live flow, redirect URI reachability, and 10-minute code expiry
 
-**Role-based visibility:**
-- Admin sees all credentials with "Created by" field
-- Developer sees only self-created credentials (filter in list page by `createdBy === currentUserEmail`)
+## Integration Points
 
----
+### 1. Post-Creation Modal (`CreateCredentialModal.tsx`, step 4)
 
-## Phase 2 — Create Credential Modal Improvements
+After the Client ID / Client Secret `SecretRow` blocks, when the created credential is OAuth 2.0 with `authorization_code` grant:
+- Add a Collapsible section (collapsed by default) labelled "Test your consent flow"
+- When expanded, render `<ConsentFlowPreview credential={createdCredential} collapsible />`
+- Simplified note: "Use this URL to preview the consent screen. Make sure your redirect URI is reachable before testing."
 
-### File: `src/components/CreateCredentialModal.tsx`
+### 2. Credential Detail Side Panel (`CredentialDetailPanel.tsx`)
 
-**Step 1 — Type Selection:**
-- Add "Most Common" tag to API Key card
-- Improve card descriptions per spec
+Inside the OAuth 2.0 details block (after redirect URIs list, around line 220):
+- Render `<ConsentFlowPreview credential={credential} />` as a persistent, always-visible sub-section (not collapsible)
 
-**Step 2 — Configure Details:**
-- Name validation: 3-64 chars, duplicate name check (case-insensitive within app)
-- Expiry: toggle Permanent vs Fixed Date with date picker pre-filled +90 days, must be future
-- Scopes: grouped by product with "Select all" per group, inline error if none selected on Next
-- Note about scopes tied to subscribed products
+## PKCE Generation Logic
 
-**Step 3 — Type-specific:**
-- API Key: review/confirm summary screen
-- OAuth 2.0: grant types, redirect URI validation (pills, max 10, HTTP only for localhost, no wildcards), access/refresh token lifetime inputs, third-party app name
-- Service Account: drag-drop .pem upload or paste area, live validation checklist (valid PEM, RSA, min 2048-bit) — all must pass before Next
+```text
+1. Generate random 32-byte verifier → base64url encode
+2. SHA-256 hash the verifier → base64url encode → code_challenge
+3. Regenerate on every mount / panel open
+```
 
-**Step 4 — Post-Creation Secret Reveal:**
-- Non-dismissible modal (no outside click, no Escape)
-- Green checkmark icon
-- Type-specific secret display with individual copy buttons
-- Notes: Client ID is permanent, Client Secret cannot be retrieved, Service Account uses JWT signing
-- Amber full-width warning banner
-- Checkbox "I have copied my credentials and stored them safely"
-- Done button disabled until checkbox checked
+Uses `crypto.getRandomValues` + `crypto.subtle.digest` (Web Crypto API). Falls back to a static placeholder if unavailable.
 
----
+## Files Changed
 
-## Phase 3 — Credential Detail Side Panel + Step-Up Auth
-
-### New files: `src/components/CredentialDetailPanel.tsx`, `src/components/StepUpAuthModal.tsx`
-
-**Side Panel (`CredentialDetailPanel.tsx`):**
-- Slides in from right as a Sheet overlay on card click (replaces current full-page detail view)
-- Editable credential name (inline)
-- Credential ID (monospace, copy), Type, Status badge, Created by, dates, expiry
-- Full scope list grouped by product as pill tags
-- OAuth details: Client ID (copyable), grant types, redirect URIs, token lifetimes, app name
-- Service Account: public key fingerprint, upload date, "Replace Public Key" button with invalidation warning
-- Status History Timeline: vertical timeline of state transitions with timestamps and actors
-- Danger Zone section (red-tinted background): Suspend/Reactivate, Revoke, Delete buttons
-
-**Step-Up Auth Modal (`StepUpAuthModal.tsx`):**
-- Intercepts Rotate, Suspend, Revoke, Delete, Replace Public Key
-- Password input with inline error on failure
-- Only on success does the actual action proceed
-
-**Action Modals (enhance existing AlertDialogs):**
-- Rotate: grace period selector (Immediate / 15-min / Custom up to 24h), shows new secret after
-- Suspend: confirmation with 403 warning
-- Reactivate: confirmation
-- Revoke: red heading, type-credential-name-to-confirm, disabled red button until match
-- Delete: only for revoked credentials, simple confirm
-
----
-
-## Phase 4 — Audit Log, Default Key, Loading States
-
-### New file: `src/components/AuditLogDrawer.tsx`
-
-**Default Key on App Creation:**
-- When app has zero credentials on first load, auto-trigger non-dismissible modal showing generated default API key
-- Checkbox + Done pattern matching post-creation flow
-- After dismiss, "Default Key" appears as Active in list
-- Update `AppContext` to generate a default credential on `createApp`
-
-**Audit Log (`AuditLogDrawer.tsx`):**
-- Accessible from card menu "View Audit Log" (filtered) or top-level tab (all credentials)
-- Event entries: type badge (color-coded), credential name/ID, actor, timestamp (relative + absolute hover), IP, failure reason
-- Filters: event type, date range, credential
-- Export CSV/JSON buttons
-- Retention notice, pagination (20/page)
-- Uses mock data from existing `MOCK_AUDIT` pattern
-
-**Loading & Transition States:**
-- Spinner inside buttons during async actions
-- Disable buttons during loading
-- Panel slide-in 250ms ease-out
-- Modal fade-in 150ms
-- Status badge color transitions
-
----
-
-## Context Changes (`src/contexts/AppContext.tsx`)
-
-- Add `currentUserEmail` to state (derived from login)
-- Generate default credential in `createApp`
-- Add credential limit constant (20)
-
-## Design Tokens
-
-All existing design tokens preserved. Danger Zone uses `bg-destructive/5 border-destructive/20`. Monospace for all IDs/keys/scopes. Semantic badges follow existing `StatusBadge` patterns.
+| File | Change |
+|------|--------|
+| `src/components/ConsentFlowPreview.tsx` | New component |
+| `src/components/CreateCredentialModal.tsx` | Add collapsible consent preview in step 4 for OAuth auth_code |
+| `src/components/CredentialDetailPanel.tsx` | Add persistent consent preview after OAuth redirect URIs |
 
