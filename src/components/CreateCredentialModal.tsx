@@ -87,13 +87,9 @@ export function CreateCredentialModal({ open, onOpenChange, appId }: CreateCrede
   const [confirmed, setConfirmed] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
-  if (!app) return null;
-
-  const enabledProducts = app.products.filter((p) => p.status !== "disabled");
-
-  // Name validation
+  // Name validation (must be before early return)
   const nameError = useMemo(() => {
-    if (!name.trim()) return null;
+    if (!app || !name.trim()) return null;
     if (name.trim().length < 3) return "Name must be at least 3 characters";
     if (name.trim().length > 64) return "Name must be 64 characters or less";
     const duplicate = app.credentials.some(
@@ -101,12 +97,16 @@ export function CreateCredentialModal({ open, onOpenChange, appId }: CreateCrede
     );
     if (duplicate) return "A credential with this name already exists in this App";
     return null;
-  }, [name, app.credentials]);
+  }, [name, app]);
 
   const pemValidation = useMemo(() => {
     if (!publicKey.trim()) return null;
     return validatePEM(publicKey);
   }, [publicKey]);
+
+  if (!app) return null;
+
+  const enabledProducts = app.products.filter((p) => p.status !== "disabled");
 
   const handleToggleScope = (productId: string, permission: string) => {
     setScopeError(false);
