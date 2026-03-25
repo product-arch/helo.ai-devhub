@@ -37,25 +37,6 @@ export default function Credentials() {
 
   if (!app) return <Navigate to="/apps" replace />;
 
-  const isProduction = app.environment === "production";
-  const baseUrl = isProduction ? "https://api.helo.ai" : "https://sandbox.helo.ai";
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    toast({ title: "Copied", description: "Copied to clipboard" });
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const getCapabilityIcon = (status: string) => {
-    if (status === "enabled") return <CheckCircle2 className="h-4 w-4 text-success" />;
-    if (status === "restricted") return <AlertTriangle className="h-4 w-4 text-warning" />;
-    return <XCircle className="h-4 w-4 text-muted-foreground" />;
-  };
-
-  const hasEnabledCapabilities = (product: Product) =>
-    product.status !== "disabled" && product.capabilities.some((c) => c.status === "enabled" || c.status === "restricted");
-
   // Detail view is now handled by CredentialDetailPanel (side panel)
 
   // --- Credentials List View ---
