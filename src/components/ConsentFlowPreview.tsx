@@ -71,9 +71,9 @@ export function ConsentFlowPreview({ credential, collapsible = false }: ConsentF
     .flatMap((s) => s.permissions)
     .join(" ");
 
-  const authUrl = `https://auth.helo.ai/oauth/authorize?client_id=${credential.clientId ?? ""}&response_type=code&scope=${encodeURIComponent(scopes)}&redirect_uri=${encodeURIComponent(selectedUri)}&code_challenge=${codeChallenge}&code_challenge_method=S256`;
+  const authUrl = `${window.location.origin}/oauth/authorize?client_id=${credential.clientId ?? ""}&response_type=code&scope=${encodeURIComponent(scopes)}&redirect_uri=${encodeURIComponent(selectedUri)}&code_challenge=${codeChallenge}&code_challenge_method=S256`;
 
-  const formattedUrl = `https://auth.helo.ai/oauth/authorize
+  const formattedUrl = `${window.location.origin}/oauth/authorize
   ?client_id=${credential.clientId ?? ""}
   &response_type=code
   &scope=${scopes}
