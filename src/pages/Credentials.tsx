@@ -327,9 +327,10 @@ export default function Credentials() {
                 revokeCredential(app.id, cred.id);
                 toast({ title: "Credential revoked", variant: "destructive" });
               }}
-              onDelete={() => {
-                deleteCredential(app.id, cred.id);
-                toast({ title: "Credential deleted" });
+              onViewAudit={() => {
+                setAuditCredentialFilter(cred.id);
+                setAuditCredentialName(cred.name);
+                setAuditLogOpen(true);
               }}
             />
           ))}
