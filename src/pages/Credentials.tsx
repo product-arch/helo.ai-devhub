@@ -126,6 +126,9 @@ export default function Credentials() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [auditLogOpen, setAuditLogOpen] = useState(false);
+  const [auditCredentialFilter, setAuditCredentialFilter] = useState<string | undefined>(undefined);
+  const [auditCredentialName, setAuditCredentialName] = useState<string | undefined>(undefined);
   const { toast } = useToast();
 
   if (!app) return <Navigate to="/apps" replace />;
@@ -389,6 +392,13 @@ export default function Credentials() {
             updateCredential(app.id, selectedCredential.id, { name });
           }
         }}
+      />
+
+      <AuditLogDrawer
+        open={auditLogOpen}
+        onOpenChange={setAuditLogOpen}
+        credentialFilter={auditCredentialFilter}
+        credentialName={auditCredentialName}
       />
     </DashboardLayout>
   );
