@@ -19,6 +19,7 @@ import {
 import { CredentialCard } from "@/components/CredentialCard";
 import { CreateCredentialModal } from "@/components/CreateCredentialModal";
 import { CredentialDetailPanel } from "@/components/CredentialDetailPanel";
+import { AuditLogDrawer } from "@/components/AuditLogDrawer";
 import {
   Eye, EyeOff, Copy, Check, RefreshCw, Trash2, AlertTriangle,
   CheckCircle2, XCircle, Lock, Pause, Shield, ChevronDown, Play, Plus, ArrowLeft,
