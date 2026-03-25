@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -23,6 +23,7 @@ import {
   CheckCircle2, XCircle, Lock, Pause, Shield, ChevronDown, Play, Plus, ArrowLeft,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import type { Product } from "@/contexts/AppContext";
 
 // --- Mocked data ---
@@ -120,6 +121,9 @@ export default function Credentials() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [showKey, setShowKey] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterType, setFilterType] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
   const { toast } = useToast();
 
   if (!app) return <Navigate to="/apps" replace />;
@@ -545,10 +549,7 @@ export default function Credentials() {
     ? app.credentials
     : app.credentials.filter((c) => c.createdBy === currentUserEmail);
 
-  // Search & filter state
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterType, setFilterType] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
+  // Search & filter state already declared at top (hooks before early return)
 
   const filteredCredentials = visibleCredentials.filter((c) => {
     if (searchQuery && !c.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
