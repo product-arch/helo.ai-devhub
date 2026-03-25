@@ -1,63 +1,40 @@
 
 
-# Sidebar Text Format Improvements
+# Refine App Card Design
 
-## What Changes
+## Problem
+The current card layout is cramped — the icon, name, ID, description, environment badge, health status, role badge, and actions menu are all jammed together with inconsistent alignment.
 
-Based on the reference image, the sidebar navigation items should be organized into labeled groups with uppercase section headers, matching the grouped structure shown. The current flat list of nav items will be split into groups with section labels.
+## Refined Structure
 
-Mapping existing items to groups based on the reference:
+Reorganize the card into clear visual zones with better spacing:
 
-**OVERVIEW** (uppercase label)
-- Dashboard (currently "Overview") → keep as "Overview" since that's the existing route
-- Products
-
-**DEVELOPER** (uppercase label)
-- API Credentials (maps to "Auth & API Keys")
-- Webhooks
-- Logs & Events (maps to "Logs")
-
-**SETTINGS** (uppercase label)
-- Settings (maps to "Configuration")
-- Users (maps to "Users & Permissions")
-
-## File Changes
-
-### `src/components/layout/AppSidebar.tsx`
-
-1. Replace the flat `navItems` array with grouped sections:
-```typescript
-const navGroups = [
-  {
-    label: "OVERVIEW",
-    items: [
-      { title: "Overview", url: `${prefix}/overview`, icon: LayoutDashboard },
-      { title: "Products", url: `${prefix}/products`, icon: Box },
-    ],
-  },
-  {
-    label: "DEVELOPER",
-    items: [
-      { title: "API Credentials", url: `${prefix}/credentials`, icon: Key },
-      { title: "Webhooks", url: `${prefix}/webhooks`, icon: Webhook },
-      { title: "Logs & Events", url: `${prefix}/logs`, icon: ScrollText },
-    ],
-  },
-  {
-    label: "SETTINGS",
-    items: [
-      { title: "Settings", url: `${prefix}/settings`, icon: Settings },
-      { title: "Users", url: `${prefix}/users`, icon: Users },
-    ],
-  },
-];
+```text
+┌──────────────────────────────────────────────┐
+│  [Icon]   App Name              [⚠/✓] [···] │
+│           app_id_here                        │
+│           Description text...                │
+│                                              │
+│  [production]  [⊕ Admin]                     │
+│                                              │
+│  ─────────────────────────────────────────── │
+│  3 of 4 products enabled          Healthy    │
+└──────────────────────────────────────────────┘
 ```
 
-2. Update the `<nav>` section to render groups with uppercase labels and spaced sections. Each group gets:
-   - A small uppercase label in muted color (`text-[11px] font-semibold tracking-wider text-muted-foreground uppercase`)
-   - Nav items beneath with slightly larger spacing between groups (`space-y-6` between groups, `space-y-1` within)
+### Changes (all in `src/pages/Apps.tsx`, lines 164-227)
 
-3. In collapsed mode, hide the group labels (same as hiding text today).
+1. **Top row**: Icon + app name on left, health icon + kebab menu on right — single horizontal line, cleanly aligned
+2. **Body**: App ID, description below the top row with proper vertical spacing
+3. **Badges row**: Environment badge and role badge side by side on their own line with `mt-3`
+4. **Footer separator**: A subtle `border-t` divider before the bottom stats row
+5. **Bottom stats row**: Product count left, health text right — with `pt-3 mt-3 border-t` for separation
+6. **Card padding**: Use `CardHeader` area or increase `p-5` for breathing room
+7. **Remove** the nested flex-col on the right side that stacks health icon and admin badge vertically — flatten the layout
 
-No other files changed. All routing, layout, auth pages, and previous implementations remain exactly as-is.
+### Design Tokens
+- Card uses existing `shadow-block` from the Card component
+- Maintain `hover:border-foreground/20 transition-colors cursor-pointer`
+- Keep all semantic badge colors (`envColors`, warning admin badge)
+- Monospace ID styling preserved
 
