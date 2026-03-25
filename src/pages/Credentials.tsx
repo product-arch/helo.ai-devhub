@@ -535,6 +535,53 @@ export default function Credentials() {
   }
 
   // --- Credentials List View ---
+
+  const CREDENTIAL_LIMIT = 20;
+  const isAdmin = true; // Derived from role context — admin sees all, developer sees own
+  const currentUserEmail = app.email;
+
+  // Role-based filtering: developer sees only own credentials
+  const visibleCredentials = isAdmin
+    ? app.credentials
+    : app.credentials.filter((c) => c.createdBy === currentUserEmail);
+
+  // Search & filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterType, setFilterType] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+
+  const filteredCredentials = visibleCredentials.filter((c) => {
+    if (searchQuery && !c.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (filterType !== "all" && c.type !== filterType) return false;
+    if (filterStatus !== "all" && c.status !== filterStatus) return false;
+    return true;
+  });
+
+  // Summary counts
+  const statusCounts = visibleCredentials.reduce(
+    (acc, c) => {
+      acc[c.status] = (acc[c.status] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
+
+  // Expiry checks
+  const now = new Date();
+  const expiringSoon = visibleCredentials.filter((c) => {
+    if (!c.expiresAt || c.status === "revoked") return false;
+    const diff = new Date(c.expiresAt).getTime() - now.getTime();
+    const days = diff / (1000 * 60 * 60 * 24);
+    return days > 0 && days <= 30;
+  });
+  const alreadyExpired = visibleCredentials.filter((c) => {
+    if (!c.expiresAt || c.status === "revoked") return false;
+    return new Date(c.expiresAt).getTime() < now.getTime();
+  });
+
+  const usagePercent = (visibleCredentials.length / CREDENTIAL_LIMIT) * 100;
+  const atLimit = visibleCredentials.length >= CREDENTIAL_LIMIT;
+
   return (
     <DashboardLayout>
       <PageHeader
@@ -551,25 +598,100 @@ export default function Credentials() {
       )}
 
       <div className="space-y-6">
+        {/* Expiry banners */}
+        {alreadyExpired.length > 0 && (
+          <div className="flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+            <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
+            <p className="text-sm text-destructive">
+              {alreadyExpired.length} credential{alreadyExpired.length !== 1 ? "s have" : " has"} expired. Rotate or delete to maintain security.
+            </p>
+          </div>
+        )}
+        {expiringSoon.length > 0 && (
+          <div className="flex items-center gap-3 rounded-lg border border-warning/30 bg-warning/5 p-3">
+            <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
+            <p className="text-sm text-warning">
+              {expiringSoon.length} credential{expiringSoon.length !== 1 ? "s" : ""} expiring soon. Review and rotate before they expire.
+            </p>
+          </div>
+        )}
+
+        {/* Header row: summary + create */}
         <div className="flex items-center justify-between">
-          <div>
+          <div className="space-y-1">
             <p className="text-sm text-muted-foreground">
-              {app.credentials.length} credential{app.credentials.length !== 1 ? "s" : ""} configured
+              {visibleCredentials.length} credential{visibleCredentials.length !== 1 ? "s" : ""}
+              {statusCounts.active ? ` · ${statusCounts.active} Active` : ""}
+              {statusCounts.suspended ? ` · ${statusCounts.suspended} Suspended` : ""}
+              {statusCounts.expired ? ` · ${statusCounts.expired} Expired` : ""}
+              {statusCounts.revoked ? ` · ${statusCounts.revoked} Revoked` : ""}
             </p>
           </div>
           {canCreate && (
-            <Button onClick={() => setCreateModalOpen(true)}>
+            <Button onClick={() => setCreateModalOpen(true)} disabled={atLimit}>
               <Plus className="h-4 w-4 mr-2" /> Create Credential
             </Button>
           )}
         </div>
 
+        {/* Credential limit warning */}
+        {usagePercent >= 80 && (
+          <div className="flex items-center justify-between text-sm">
+            <span className={cn("text-xs", atLimit ? "text-destructive" : "text-warning")}>
+              {atLimit
+                ? "Credential limit reached. Revoke or delete unused credentials to create new ones."
+                : `You are using ${visibleCredentials.length} of ${CREDENTIAL_LIMIT} allowed credentials.`}
+            </span>
+            <div className="w-32 h-1.5 bg-muted rounded-full overflow-hidden">
+              <div
+                className={cn("h-full rounded-full transition-all", atLimit ? "bg-destructive" : "bg-warning")}
+                style={{ width: `${Math.min(usagePercent, 100)}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Search & Filters */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Input
+            placeholder="Search credentials..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="sm:max-w-xs"
+          />
+          <div className="flex gap-2">
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            >
+              <option value="all">All Types</option>
+              <option value="api_key">API Key</option>
+              <option value="oauth2">OAuth 2.0</option>
+              <option value="service_account">Service Account</option>
+            </select>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            >
+              <option value="all">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="suspended">Suspended</option>
+              <option value="expired">Expired</option>
+              <option value="revoked">Revoked</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Credential cards */}
         <div className="grid gap-4">
-          {app.credentials.map((cred) => (
+          {filteredCredentials.map((cred) => (
             <CredentialCard
               key={cred.id}
               credential={cred}
               canManage={canManage}
+              isAdmin={isAdmin}
               onView={() => setSelectedCredential(cred)}
               onRotate={() => {
                 rotateCredential(app.id, cred.id);
@@ -594,9 +716,18 @@ export default function Credentials() {
               }}
             />
           ))}
-          {app.credentials.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
-              No credentials configured. Create one to get started.
+          {filteredCredentials.length === 0 && visibleCredentials.length > 0 && (
+            <div className="text-center py-12 text-muted-foreground text-sm">
+              No credentials match your filters.
+            </div>
+          )}
+          {visibleCredentials.length === 0 && (
+            <div className="text-center py-16">
+              <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+                <Shield className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <h3 className="text-sm font-medium mb-1">No credentials yet</h3>
+              <p className="text-sm text-muted-foreground">Create a credential to authenticate API calls for this App.</p>
             </div>
           )}
         </div>

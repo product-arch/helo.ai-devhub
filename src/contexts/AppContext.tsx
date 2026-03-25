@@ -417,6 +417,47 @@ const generateMockCredentials = (appEmail: string): AppCredential[] => [
     redirectUris: [],
     thirdPartyAppName: "CRM Integration",
   },
+  {
+    id: `cred_${generateId()}`,
+    name: "Legacy Batch Key",
+    type: "api_key",
+    status: "suspended",
+    createdAt: "2025-11-10T08:00:00Z",
+    createdBy: "dev@acme.com",
+    lastUsedAt: "2026-02-01T12:00:00Z",
+    expiresAt: null,
+    scopes: [
+      { product: "sms", permissions: ["sms.send"] },
+    ],
+    apiKey: generateApiKey(),
+  },
+  {
+    id: `cred_${generateId()}`,
+    name: "Staging Service Account",
+    type: "service_account",
+    status: "active",
+    createdAt: "2026-02-10T10:00:00Z",
+    createdBy: appEmail,
+    lastUsedAt: new Date(Date.now() - 86400000).toISOString(),
+    expiresAt: new Date(Date.now() + 15 * 86400000).toISOString(), // expires in 15 days
+    scopes: [
+      { product: "rcs", permissions: ["rcs.send", "rcs.rich_card"] },
+    ],
+    publicKey: "ssh-rsa AAAA...",
+    keyFormat: "RSA/PEM",
+  },
+  {
+    id: `cred_${generateId()}`,
+    name: "Deprecated v1 Key",
+    type: "api_key",
+    status: "revoked",
+    createdAt: "2025-06-01T09:00:00Z",
+    createdBy: "dev@acme.com",
+    lastUsedAt: "2025-12-15T16:00:00Z",
+    expiresAt: null,
+    scopes: [],
+    apiKey: generateApiKey(),
+  },
 ];
 
 // --- Mock Webhook Endpoints ---

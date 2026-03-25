@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Key, Globe, Server, MoreVertical, RefreshCw, Pause, Play, XCircle, Trash2, Eye } from "lucide-react";
+import { Key, Globe, Server, MoreVertical, RefreshCw, Pause, Play, XCircle, Trash2, Eye, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CredentialCardProps {
@@ -15,7 +15,9 @@ interface CredentialCardProps {
   onSuspend: () => void;
   onRevoke: () => void;
   onDelete: () => void;
+  onViewAudit?: () => void;
   canManage: boolean;
+  isAdmin?: boolean;
 }
 
 const typeConfig: Record<string, { label: string; icon: React.ElementType; className: string }> = {
@@ -31,29 +33,56 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   expired: { label: "Expired", className: "bg-muted text-muted-foreground border-border" },
 };
 
-export function CredentialCard({ credential, onView, onRotate, onSuspend, onRevoke, onDelete, canManage }: CredentialCardProps) {
+function getExpiryDisplay(expiresAt: string | null): { text: string; className: string } | null {
+  if (!expiresAt) return { text: "Permanent", className: "text-muted-foreground" };
+  const now = new Date();
+  const expiry = new Date(expiresAt);
+  const diffMs = expiry.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return { text: "Expired", className: "text-destructive" };
+  if (diffDays <= 30) return { text: `Expires in ${diffDays}d`, className: "text-warning" };
+  return { text: `Expires ${expiry.toLocaleDateString()}`, className: "text-muted-foreground" };
+}
+
+export function CredentialCard({
+  credential,
+  onView,
+  onRotate,
+  onSuspend,
+  onRevoke,
+  onDelete,
+  onViewAudit,
+  canManage,
+  isAdmin = false,
+}: CredentialCardProps) {
   const type = typeConfig[credential.type] || typeConfig.api_key;
   const status = statusConfig[credential.status] || statusConfig.active;
   const TypeIcon = type.icon;
+  const expiry = getExpiryDisplay(credential.expiresAt);
 
-  const scopeSummary = credential.scopes.length > 0
-    ? credential.scopes.map((s) => s.product).join(", ")
-    : "No scopes";
+  const isRevoked = credential.status === "revoked";
+  const isExpired = credential.status === "expired";
+  const showRotate = !isRevoked && !isExpired;
+  const showSuspend = !isRevoked;
+  const showRevoke = !isRevoked;
+  const showDelete = isRevoked;
 
   return (
     <Card className="hover:border-foreground/20 transition-colors cursor-pointer" onClick={onView}>
-      <CardContent className="pt-6">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-muted">
+      <CardContent className="p-5">
+        {/* Top row: icon + name | badges + menu */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="p-2 rounded-lg bg-muted shrink-0">
               <TypeIcon className="h-4 w-4" />
             </div>
-            <div>
-              <h3 className="font-medium text-sm">{credential.name}</h3>
-              <p className="text-[11px] font-mono text-muted-foreground mt-0.5">{credential.id}</p>
+            <div className="min-w-0">
+              <h3 className="font-medium text-sm truncate">{credential.name}</h3>
+              <p className="text-[11px] font-mono text-muted-foreground mt-0.5 truncate">{credential.id}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
             <Badge variant="outline" className={cn("text-[10px]", type.className)}>
               {type.label}
             </Badge>
@@ -71,41 +100,63 @@ export function CredentialCard({ credential, onView, onRotate, onSuspend, onRevo
                   <DropdownMenuItem onClick={onView}>
                     <Eye className="h-4 w-4 mr-2" /> View Details
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={onRotate} disabled={credential.status === "revoked"}>
-                    <RefreshCw className="h-4 w-4 mr-2" /> Rotate
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={onSuspend} disabled={credential.status === "revoked"}>
-                    {credential.status === "suspended" ? (
-                      <><Play className="h-4 w-4 mr-2" /> Reactivate</>
-                    ) : (
-                      <><Pause className="h-4 w-4 mr-2" /> Suspend</>
-                    )}
+                  {showRotate && (
+                    <DropdownMenuItem onClick={onRotate}>
+                      <RefreshCw className="h-4 w-4 mr-2" /> Rotate Key
+                    </DropdownMenuItem>
+                  )}
+                  {showSuspend && (
+                    <DropdownMenuItem onClick={onSuspend}>
+                      {credential.status === "suspended" ? (
+                        <><Play className="h-4 w-4 mr-2" /> Reactivate</>
+                      ) : (
+                        <><Pause className="h-4 w-4 mr-2" /> Suspend</>
+                      )}
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={onViewAudit}>
+                    <FileText className="h-4 w-4 mr-2" /> View Audit Log
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={onRevoke} disabled={credential.status === "revoked"} className="text-warning focus:text-warning">
-                    <XCircle className="h-4 w-4 mr-2" /> Revoke
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
-                    <Trash2 className="h-4 w-4 mr-2" /> Delete
-                  </DropdownMenuItem>
+                  {showRevoke && (
+                    <DropdownMenuItem onClick={onRevoke} className="text-destructive focus:text-destructive">
+                      <XCircle className="h-4 w-4 mr-2" /> Revoke
+                    </DropdownMenuItem>
+                  )}
+                  {showDelete && (
+                    <DropdownMenuItem onClick={onDelete} className="text-muted-foreground focus:text-muted-foreground">
+                      <Trash2 className="h-4 w-4 mr-2" /> Delete
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-4 text-xs text-muted-foreground">
-          <div>
-            <p className="mb-0.5">Created</p>
-            <p className="text-foreground">{new Date(credential.createdAt).toLocaleDateString()}</p>
+
+        {/* Scopes as pills */}
+        {credential.scopes.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-3 ml-[44px]">
+            {credential.scopes.flatMap((s) =>
+              s.permissions.map((p) => (
+                <Badge key={p} variant="outline" className="text-[10px] font-mono bg-muted/50 border-border px-1.5 py-0">
+                  {p}
+                </Badge>
+              ))
+            )}
           </div>
-          <div>
-            <p className="mb-0.5">Last Used</p>
-            <p className="text-foreground">{credential.lastUsedAt ? new Date(credential.lastUsedAt).toLocaleDateString() : "Never"}</p>
+        )}
+
+        {/* Footer: metadata row */}
+        <div className="flex items-center justify-between pt-3 mt-4 border-t border-border text-xs text-muted-foreground">
+          <div className="flex items-center gap-4">
+            <span>Created {new Date(credential.createdAt).toLocaleDateString()}</span>
+            <span>Used {credential.lastUsedAt ? new Date(credential.lastUsedAt).toLocaleDateString() : "Never"}</span>
+            {isAdmin && <span>by {credential.createdBy}</span>}
           </div>
-          <div>
-            <p className="mb-0.5">Scopes</p>
-            <p className="text-foreground truncate">{scopeSummary}</p>
-          </div>
+          {expiry && (
+            <span className={cn("text-xs", expiry.className)}>{expiry.text}</span>
+          )}
         </div>
       </CardContent>
     </Card>
