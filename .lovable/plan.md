@@ -1,48 +1,84 @@
 
 
-# OLED True Black Dark Mode Theme
+# Integrate Clerk Authentication
 
 ## Overview
 
-Shift the dark theme from warm charcoal (7% lightness backgrounds) to pure/near-pure black with high-contrast text. Inspired by Linear and Vercel's dark modes — crisp, minimal, OLED-friendly.
+Replace the mock `login`/`logout` system with Clerk's React SDK. Clerk handles all auth UI and session management; the existing custom login/signup pages and AuthLayout left panel are preserved as the app's branded wrapper, but form submission delegates to Clerk.
+
+## Approach
+
+Since Clerk's publishable key is a **public** key (safe to store in code), we'll store it directly as `VITE_CLERK_PUBLISHABLE_KEY` in the codebase. The user will need to provide the key value.
 
 ## Changes
 
-### 1. `src/index.css` — Update `.dark` CSS variables
+### 1. Install `@clerk/react@latest`
 
-Replace all dark theme HSL values:
+Add the dependency.
 
-| Token | Current | New | Rationale |
-|-------|---------|-----|-----------|
-| `--background` | `0 0% 7%` | `0 0% 0%` | Pure black base |
-| `--foreground` | `0 0% 72%` | `0 0% 82%` | Brighter body text for contrast |
-| `--card` | `0 0% 10%` | `0 0% 4%` | Near-black card surfaces |
-| `--card-foreground` | `0 0% 72%` | `0 0% 82%` | Match foreground |
-| `--popover` | `0 0% 10%` | `0 0% 4%` | Match card |
-| `--popover-foreground` | `0 0% 72%` | `0 0% 82%` | Match foreground |
-| `--primary` | `0 0% 88%` | `0 0% 95%` | Near-white primary text/buttons |
-| `--primary-foreground` | `0 0% 4%` | `0 0% 0%` | Pure black on primary |
-| `--secondary` | `0 0% 13%` | `0 0% 8%` | Darker secondary surface |
-| `--secondary-foreground` | `0 0% 72%` | `0 0% 78%` | Slightly brighter |
-| `--muted` | `0 0% 13%` | `0 0% 8%` | Darker muted surface |
-| `--muted-foreground` | `0 0% 48%` | `0 0% 45%` | Subtle dimmed text |
-| `--accent` | `0 0% 14%` | `0 0% 8%` | Darker accent surface |
-| `--accent-foreground` | `0 0% 72%` | `0 0% 82%` | Brighter |
-| `--border` | `0 0% 16%` | `0 0% 12%` | Subtler borders on black |
-| `--input` | `0 0% 16%` | `0 0% 12%` | Match border |
-| `--ring` | `0 0% 30%` | `0 0% 25%` | Subtler focus ring |
-| `--sidebar-background` | `0 0% 9%` | `0 0% 0%` | Pure black sidebar |
-| `--sidebar-foreground` | `0 0% 62%` | `0 0% 70%` | Brighter sidebar text |
-| `--sidebar-accent` | `0 0% 12%` | `0 0% 8%` | Darker hover states |
-| `--sidebar-accent-foreground` | `0 0% 72%` | `0 0% 85%` | High-contrast active items |
-| `--sidebar-border` | `0 0% 16%` | `0 0% 10%` | Subtle sidebar borders |
-| `--sidebar-ring` | `0 0% 30%` | `0 0% 20%` | Subtler ring |
+### 2. `src/main.tsx` — Wrap app in `<ClerkProvider>`
 
-Status/role/destructive colors stay unchanged — they already work well on dark backgrounds.
+```tsx
+import { ClerkProvider } from "@clerk/react";
+
+createRoot(document.getElementById("root")!).render(
+  <ClerkProvider afterSignOutUrl="/login">
+    <App />
+  </ClerkProvider>
+);
+```
+
+The publishable key is automatically read from `VITE_CLERK_PUBLISHABLE_KEY` — no manual prop needed.
+
+### 3. `src/contexts/AppContext.tsx` — Replace mock auth with Clerk
+
+- Remove `login` function (mock delay + setState)
+- Replace `isAuthenticated` with Clerk's `useAuth().isSignedIn`
+- Replace `logout` with Clerk's `useClerk().signOut()`
+- Keep all app state (apps, credentials, webhooks, etc.) unchanged
+
+The `AppState.isAuthenticated` field and `login`/`logout` methods will be replaced by Clerk hooks. Components consuming `useApp().isAuthenticated` will get the value from Clerk instead.
+
+### 4. `src/App.tsx` — Update `ProtectedRoute` and `PublicRoute`
+
+- Use `useAuth()` from `@clerk/react` for `isSignedIn` checks (or continue proxying through AppContext)
+- Keep route structure identical
+
+### 5. `src/pages/Login.tsx` — Wire form to Clerk sign-in
+
+- Replace `login()` call with Clerk's `useSignIn()` hook
+- Call `signIn.create({ identifier: email, password })` on form submit
+- Keep the existing branded UI, AuthLayout wrapper, social buttons, and validation
+- Wire "Continue with Google" to Clerk's OAuth flow via `signIn.authenticateWithRedirect({ strategy: "oauth_google" })`
+
+### 6. `src/pages/SignUp.tsx` — Wire form to Clerk sign-up
+
+- Replace mock `login()` call with Clerk's `useSignUp()` hook
+- Call `signUp.create({ emailAddress, password, firstName, lastName })` on form submit
+- Keep existing branded UI
+
+### 7. `src/pages/ForgotPassword.tsx` — Wire to Clerk password reset
+
+- Use `useSignIn()` to initiate `signIn.create({ strategy: "reset_password_email_code" })`
+
+### 8. `src/components/layout/AppSidebar.tsx` (or wherever logout lives)
+
+- Replace `logout()` with Clerk's `<UserButton />` or `clerk.signOut()`
+
+## Prerequisites
+
+Before implementation, the user must provide their **Clerk Publishable Key** from https://dashboard.clerk.com/~/api-keys. It will be stored as `VITE_CLERK_PUBLISHABLE_KEY`.
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `src/index.css` | Update all `.dark` CSS custom property values for OLED true black theme |
+| `package.json` | Add `@clerk/react@latest` |
+| `src/main.tsx` | Wrap in `<ClerkProvider>` |
+| `src/contexts/AppContext.tsx` | Remove mock `login`/`logout`, derive `isAuthenticated` from Clerk |
+| `src/App.tsx` | Update route guards to use Clerk auth state |
+| `src/pages/Login.tsx` | Use `useSignIn()` for form submission and OAuth |
+| `src/pages/SignUp.tsx` | Use `useSignUp()` for form submission |
+| `src/pages/ForgotPassword.tsx` | Use Clerk password reset flow |
+| `src/components/layout/AppSidebar.tsx` | Use Clerk sign-out |
 
