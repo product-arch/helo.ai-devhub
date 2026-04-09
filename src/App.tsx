@@ -60,7 +60,7 @@ function AppRoutes() {
   );
 }
 
-const App = () => (
+const App: React.FC = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <AppProvider>
