@@ -146,32 +146,38 @@
 .dither-bg {
   background-color: #FFDFDF;
   background-image:
-    /* Pixel grid */
-    radial-gradient(circle, rgba(239,22,69,0.08) 1px, transparent 1px),
-    /* Small bubbles */
-    radial-gradient(circle at 15% 25%, rgba(239,22,69,0.12) 0%, transparent 8%),
-    radial-gradient(circle at 75% 15%, rgba(239,22,69,0.10) 0%, transparent 6%),
-    radial-gradient(circle at 55% 75%, rgba(239,22,69,0.14) 0%, transparent 10%),
-    radial-gradient(circle at 25% 85%, rgba(239,22,69,0.09) 0%, transparent 7%),
-    radial-gradient(circle at 85% 65%, rgba(239,22,69,0.11) 0%, transparent 5%),
-    radial-gradient(circle at 40% 45%, rgba(239,22,69,0.07) 0%, transparent 4%),
-    /* Liquid blobs */
-    radial-gradient(ellipse at 20% 50%, rgba(239,22,69,0.13) 0%, transparent 45%),
-    radial-gradient(ellipse at 80% 30%, rgba(239,22,69,0.10) 0%, transparent 40%),
-    radial-gradient(ellipse at 50% 90%, rgba(239,22,69,0.15) 0%, transparent 50%),
-    radial-gradient(ellipse at 65% 55%, rgba(239,22,69,0.08) 0%, transparent 35%);
+    /* Large bubble grid */
+    radial-gradient(circle, rgba(239,22,69,0.15) 7px, transparent 7.5px),
+    /* Large bubble grid — staggered row */
+    radial-gradient(circle, rgba(239,22,69,0.12) 7px, transparent 7.5px),
+    /* Medium bubble grid */
+    radial-gradient(circle, rgba(239,22,69,0.10) 4px, transparent 4.5px),
+    /* Medium bubble grid — staggered */
+    radial-gradient(circle, rgba(239,22,69,0.08) 4px, transparent 4.5px),
+    /* Small pixel grid */
+    radial-gradient(circle, rgba(239,22,69,0.06) 1.5px, transparent 2px),
+    /* Accent liquid blobs */
+    radial-gradient(ellipse at 15% 30%, rgba(239,22,69,0.18) 0%, transparent 40%),
+    radial-gradient(ellipse at 75% 70%, rgba(239,22,69,0.15) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 85%, rgba(239,22,69,0.20) 0%, transparent 35%);
   background-size:
-    4px 4px,
-    100% 100%,
-    100% 100%,
-    100% 100%,
-    100% 100%,
-    100% 100%,
-    100% 100%,
-    100% 100%,
+    80px 80px,
+    80px 80px,
+    40px 40px,
+    40px 40px,
+    12px 12px,
     100% 100%,
     100% 100%,
     100% 100%;
+  background-position:
+    0 0,
+    40px 40px,
+    0 0,
+    20px 20px,
+    0 0,
+    0 0,
+    0 0,
+    0 0;
 }
 
 @layer utilities {
