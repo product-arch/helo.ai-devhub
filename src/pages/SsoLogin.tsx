@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useSignIn } from "@clerk/react/legacy";
+import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,24 +13,20 @@ import { Moon, Sun } from "lucide-react";
 export default function SsoLogin() {
   const [domain, setDomain] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { isLoaded, signIn } = useSignIn();
+  const { login } = useApp();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!domain.trim() || !isLoaded || !signIn) return;
+    if (!domain.trim()) return;
     setIsLoading(true);
-    try {
-      await signIn.authenticateWithRedirect({
-        strategy: "enterprise_sso",
-        identifier: domain.trim(),
-        redirectUrl: "/sso-callback",
-        redirectUrlComplete: "/apps",
-      } as any);
-    } catch (err: any) {
-      toast({ title: "SSO error", description: err?.errors?.[0]?.message || "Could not initiate SSO login.", variant: "destructive" });
+    await new Promise((r) => setTimeout(r, 1200));
+    const success = await login(`sso@${domain}`, "sso-mock");
+    if (success) {
+      toast({ title: "SSO authenticated", description: `Signed in via ${domain}.` });
+      navigate("/apps");
     }
     setIsLoading(false);
   };

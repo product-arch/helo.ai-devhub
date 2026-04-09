@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useSignIn } from "@clerk/react/legacy";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,22 +13,13 @@ export default function ForgotPassword() {
   const [isLoading, setIsLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const { theme, toggleTheme } = useTheme();
-  const { isLoaded, signIn } = useSignIn();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !isLoaded || !signIn) return;
+    if (!email) return;
     setIsLoading(true);
-    try {
-      await signIn.create({
-        strategy: "reset_password_email_code",
-        identifier: email,
-      });
-      setSent(true);
-    } catch {
-      // Always show success to prevent email enumeration
-      setSent(true);
-    }
+    await new Promise((r) => setTimeout(r, 1000));
+    setSent(true);
     setIsLoading(false);
   };
 
@@ -42,17 +32,17 @@ export default function ForgotPassword() {
         <CardHeader className="text-center pb-2">
           <h1 className="text-lg font-semibold tracking-tight">Reset your password</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {sent ? "Check your email for the reset code" : "Enter your email and we'll send a reset code"}
+            {sent ? "Check your email for the reset link" : "Enter your email and we'll send a reset link"}
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
           {sent ? (
             <div className="text-center space-y-4">
               <div className="flex justify-center">
-                <CheckCircle className="h-10 w-10 text-success" />
+                <CheckCircle className="h-10 w-10 text-green-500" />
               </div>
               <p className="text-sm text-muted-foreground">
-                If an account exists for <span className="font-medium text-foreground">{email}</span>, you'll receive a password reset code shortly.
+                If an account exists for <span className="font-medium text-foreground">{email}</span>, you'll receive a password reset link shortly.
               </p>
               <Link to="/login" className="text-sm text-foreground font-medium hover:underline inline-block">
                 Back to sign in
@@ -66,7 +56,7 @@ export default function ForgotPassword() {
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Send Reset Code
+                Send Reset Link
               </Button>
               <div className="text-center">
                 <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">

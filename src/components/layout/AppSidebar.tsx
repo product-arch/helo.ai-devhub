@@ -10,7 +10,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
-import { UserButton } from "@clerk/react";
 
 export function AppSidebar() {
   const { theme, toggleTheme } = useTheme();

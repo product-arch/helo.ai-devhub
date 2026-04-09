@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AppProvider, useApp } from "@/contexts/AppContext";
-import { AuthenticateWithRedirectCallback } from "@clerk/react";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import MfaVerify from "./pages/MfaVerify";
@@ -46,7 +45,6 @@ function AppRoutes() {
       <Route path="/mfa" element={<PublicRoute><MfaVerify /></PublicRoute>} />
       <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
       <Route path="/sso" element={<PublicRoute><SsoLogin /></PublicRoute>} />
-      <Route path="/sso-callback" element={<AuthenticateWithRedirectCallback />} />
       <Route path="/oauth/authorize" element={<OAuthConsent />} />
       <Route path="/apps" element={<ProtectedRoute><Apps /></ProtectedRoute>} />
       <Route path="/apps/:appId/overview" element={<ProtectedRoute><Overview /></ProtectedRoute>} />
