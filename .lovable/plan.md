@@ -1,24 +1,48 @@
 
 
-# Make OAuth 2.0 Credential Modal Scrollable
+# OLED True Black Dark Mode Theme
 
 ## Overview
 
-The DialogContent component currently uses a fixed centered position without scroll capability. When content (like the consent flow preview) exceeds the viewport height, it gets clipped.
+Shift the dark theme from warm charcoal (7% lightness backgrounds) to pure/near-pure black with high-contrast text. Inspired by Linear and Vercel's dark modes — crisp, minimal, OLED-friendly.
 
 ## Changes
 
-### `src/components/ui/dialog.tsx` — Add scroll support to DialogContent
+### 1. `src/index.css` — Update `.dark` CSS variables
 
-Update the DialogContent className to add `max-h-[90vh] overflow-y-auto` so the modal becomes scrollable when content exceeds 90% of viewport height. Change from `grid` to `flex flex-col` to ensure proper scroll behavior.
+Replace all dark theme HSL values:
 
-Current: `fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-block ...`
+| Token | Current | New | Rationale |
+|-------|---------|-----|-----------|
+| `--background` | `0 0% 7%` | `0 0% 0%` | Pure black base |
+| `--foreground` | `0 0% 72%` | `0 0% 82%` | Brighter body text for contrast |
+| `--card` | `0 0% 10%` | `0 0% 4%` | Near-black card surfaces |
+| `--card-foreground` | `0 0% 72%` | `0 0% 82%` | Match foreground |
+| `--popover` | `0 0% 10%` | `0 0% 4%` | Match card |
+| `--popover-foreground` | `0 0% 72%` | `0 0% 82%` | Match foreground |
+| `--primary` | `0 0% 88%` | `0 0% 95%` | Near-white primary text/buttons |
+| `--primary-foreground` | `0 0% 4%` | `0 0% 0%` | Pure black on primary |
+| `--secondary` | `0 0% 13%` | `0 0% 8%` | Darker secondary surface |
+| `--secondary-foreground` | `0 0% 72%` | `0 0% 78%` | Slightly brighter |
+| `--muted` | `0 0% 13%` | `0 0% 8%` | Darker muted surface |
+| `--muted-foreground` | `0 0% 48%` | `0 0% 45%` | Subtle dimmed text |
+| `--accent` | `0 0% 14%` | `0 0% 8%` | Darker accent surface |
+| `--accent-foreground` | `0 0% 72%` | `0 0% 82%` | Brighter |
+| `--border` | `0 0% 16%` | `0 0% 12%` | Subtler borders on black |
+| `--input` | `0 0% 16%` | `0 0% 12%` | Match border |
+| `--ring` | `0 0% 30%` | `0 0% 25%` | Subtler focus ring |
+| `--sidebar-background` | `0 0% 9%` | `0 0% 0%` | Pure black sidebar |
+| `--sidebar-foreground` | `0 0% 62%` | `0 0% 70%` | Brighter sidebar text |
+| `--sidebar-accent` | `0 0% 12%` | `0 0% 8%` | Darker hover states |
+| `--sidebar-accent-foreground` | `0 0% 72%` | `0 0% 85%` | High-contrast active items |
+| `--sidebar-border` | `0 0% 16%` | `0 0% 10%` | Subtle sidebar borders |
+| `--sidebar-ring` | `0 0% 30%` | `0 0% 20%` | Subtler ring |
 
-New: `fixed left-[50%] top-[50%] z-50 flex flex-col w-full max-w-lg max-h-[85vh] overflow-y-auto translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-block ...`
+Status/role/destructive colors stay unchanged — they already work well on dark backgrounds.
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `src/components/ui/dialog.tsx` | Add `max-h-[85vh] overflow-y-auto` and switch from `grid` to `flex flex-col` |
+| `src/index.css` | Update all `.dark` CSS custom property values for OLED true black theme |
 
