@@ -1,36 +1,25 @@
 
 
-# Auth Left Panel — Pink Background with Liquid-Pixel-Bubble Pattern
+# Auth Background — Prominent Geometric Bubble Pattern
 
 ## Overview
 
-Replace the dark dither background on the auth left panel with a pink `#FFDFDF` base and a decorative CSS pattern in `#EF1645` that evokes liquid, pixel, and bubble motifs. Text colors must be updated for readability on a light pink background.
+Replace the current subtle, organic dither pattern with a more prominent, geometrically ordered arrangement of pixel-bubbles in `#EF1645`. The pattern will use repeating geometric grids of circles at multiple scales — creating an abstract but structured feel (think halftone dots meets geometric wallpaper).
 
-## Changes
+## Changes: `src/index.css` — Replace `.dither-bg`
 
-### 1. `src/index.css` — Replace `.dither-bg` styles
+Replace the current gradient layers with a structured, multi-scale approach:
 
-Replace the current dark dither pattern with:
-- Background color: `#FFDFDF`
-- Layered CSS radial gradients in `#EF1645` at varying opacities to create:
-  - **Bubble** effect: scattered circular radial gradients at different sizes (small, medium, large) with low opacity
-  - **Pixel** effect: tiny repeating dot grid pattern (3-4px spacing) with very low opacity
-  - **Liquid** effect: large, soft elliptical gradients with organic positioning to simulate fluid blobs
+1. **Large bubble grid** — repeating `radial-gradient` circles (~12-16px diameter) on a ~80px grid, opacity ~0.12-0.15. Creates the dominant visual rhythm.
+2. **Medium bubble grid** — repeating circles (~6-8px) on a ~40px grid, offset by half the large grid spacing to create a staggered/diamond pattern. Opacity ~0.10.
+3. **Small pixel grid** — repeating tiny dots (~2px) on a ~12px grid at opacity ~0.06. Provides texture fill between larger bubbles.
+4. **Accent liquid blobs** — 3-4 large soft elliptical gradients (kept from current) at slightly higher opacity (~0.15-0.20) to add organic depth behind the geometric grid.
 
-All purely CSS — no images or SVGs.
-
-### 2. `src/components/AuthLayout.tsx` — Update text colors for light background
-
-Since the background shifts from near-black to light pink, all text on the left panel and mobile header must change:
-- `text-white` → `text-gray-900` (headings)
-- `text-gray-400` / `text-gray-300` → `text-gray-600` / `text-gray-700` (body/labels)
-- `text-gray-500` (icons) → `text-[#EF1645]/60` (tinted icons)
-- Theme toggle button hover: `hover:bg-pink-200/50` instead of `hover:bg-gray-800`
+All layers use `background-size` with specific tile dimensions and `background-position` offsets to create the staggered geometric arrangement. No images — pure CSS.
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `src/index.css` | Replace `.dither-bg` with pink + red liquid/pixel/bubble pattern |
-| `src/components/AuthLayout.tsx` | Update text/icon colors for light background readability |
+| `src/index.css` | Replace `.dither-bg` background-image layers with geometric repeating bubble grids |
 
