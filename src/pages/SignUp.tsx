@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useSignUp } from "@clerk/react";
+import { useSignUp } from "@clerk/react/legacy";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +20,7 @@ export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const { signUp, setActive } = useSignUp();
+  const { isLoaded, signUp, setActive } = useSignUp();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -42,7 +42,7 @@ export default function SignUp() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    if (!signUp) return;
+    if (!isLoaded || !signUp) return;
 
     setIsLoading(true);
     try {
@@ -56,12 +56,11 @@ export default function SignUp() {
         lastName,
       });
 
-      if (result.status === "complete" && setActive) {
+      if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
         toast({ title: "Account created", description: "Welcome to helo.ai Developer Console." });
         navigate("/apps");
       } else {
-        // May need email verification - show message
         toast({ title: "Verification needed", description: "Please check your email to verify your account." });
       }
     } catch (err: any) {
@@ -72,7 +71,7 @@ export default function SignUp() {
   };
 
   const handleGoogleSignUp = async () => {
-    if (!signUp) return;
+    if (!isLoaded || !signUp) return;
     try {
       await signUp.authenticateWithRedirect({
         strategy: "oauth_google",

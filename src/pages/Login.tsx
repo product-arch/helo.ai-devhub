@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useSignIn } from "@clerk/react";
+import { useSignIn } from "@clerk/react/legacy";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,7 +27,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
-  const { signIn, setActive } = useSignIn();
+  const { isLoaded, signIn, setActive } = useSignIn();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -50,12 +50,12 @@ export default function Login() {
     const emailValid = validateEmail(email);
     const passwordValid = validatePassword(password);
     if (!emailValid || !passwordValid) return;
-    if (!signIn) return;
+    if (!isLoaded || !signIn) return;
 
     setIsLoading(true);
     try {
       const result = await signIn.create({ identifier: email, password });
-      if (result.status === "complete" && setActive) {
+      if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
         toast({ title: "Welcome back", description: "Successfully signed in to your account." });
         navigate("/apps");
@@ -68,7 +68,7 @@ export default function Login() {
   };
 
   const handleGoogleLogin = async () => {
-    if (!signIn) return;
+    if (!isLoaded || !signIn) return;
     try {
       await signIn.authenticateWithRedirect({
         strategy: "oauth_google",
@@ -148,7 +148,6 @@ export default function Login() {
           </Button>
         </form>
 
-        {/* Divider */}
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <span className="w-full border-t border-border" />
@@ -158,7 +157,6 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Social login */}
         <div className="space-y-2">
           <Button variant="outline" className="w-full" onClick={handleGoogleLogin} disabled={isLoading}>
             <GoogleIcon className="h-4 w-4 mr-2" />
@@ -172,7 +170,6 @@ export default function Login() {
           </Button>
         </div>
 
-        {/* Footer links */}
         <div className="text-center space-y-1">
           <p className="text-sm text-muted-foreground">
             Don't have an account?{" "}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useApp } from "@/contexts/AppContext";
+import { useClerk } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +16,7 @@ export default function MfaVerify() {
   const [useBackup, setUseBackup] = useState(false);
   const [backupCode, setBackupCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useApp();
+  const clerk = useClerk();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
@@ -25,10 +25,13 @@ export default function MfaVerify() {
     const value = useBackup ? backupCode : code;
     if (!value || (!useBackup && value.length < 6)) return;
     setIsLoading(true);
-    const success = await login("mfa@mock.com", "mock");
-    if (success) {
+    try {
+      // MFA verification would be handled by Clerk's sign-in flow
+      // This page serves as a placeholder for custom MFA UI
       toast({ title: "Verified", description: "Two-factor authentication successful." });
       navigate("/apps");
+    } catch {
+      toast({ title: "Verification failed", description: "Invalid code. Please try again.", variant: "destructive" });
     }
     setIsLoading(false);
   };

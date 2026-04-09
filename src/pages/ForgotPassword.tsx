@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useSignIn } from "@clerk/react";
+import { useSignIn } from "@clerk/react/legacy";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,19 +8,17 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Loader2, CheckCircle } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Moon, Sun } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const { theme, toggleTheme } = useTheme();
-  const { signIn } = useSignIn();
-  const { toast } = useToast();
+  const { isLoaded, signIn } = useSignIn();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !signIn) return;
+    if (!email || !isLoaded || !signIn) return;
     setIsLoading(true);
     try {
       await signIn.create({
@@ -28,8 +26,8 @@ export default function ForgotPassword() {
         identifier: email,
       });
       setSent(true);
-    } catch (err: any) {
-      // Always show success to avoid email enumeration
+    } catch {
+      // Always show success to prevent email enumeration
       setSent(true);
     }
     setIsLoading(false);
@@ -51,7 +49,7 @@ export default function ForgotPassword() {
           {sent ? (
             <div className="text-center space-y-4">
               <div className="flex justify-center">
-                <CheckCircle className="h-10 w-10 text-green-500" />
+                <CheckCircle className="h-10 w-10 text-success" />
               </div>
               <p className="text-sm text-muted-foreground">
                 If an account exists for <span className="font-medium text-foreground">{email}</span>, you'll receive a password reset code shortly.
