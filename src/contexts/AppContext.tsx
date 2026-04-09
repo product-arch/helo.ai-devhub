@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, ReactNode } from "react";
+import { useAuth, useClerk } from "@clerk/react";
 
 // --- Types ---
 
@@ -175,7 +176,6 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
 };
 
 interface AppState {
-  isAuthenticated: boolean;
   accountStatus: AccountStatus;
   blockingIssues: string[];
   accountName: string;
@@ -186,7 +186,7 @@ interface AppState {
 }
 
 interface AppContextType extends AppState {
-  login: (email: string, password: string) => Promise<boolean>;
+  isAuthenticated: boolean;
   logout: () => void;
   createApp: (name: string, email: string, environment: AppEnvironment, description: string, invitedDevelopers: string[]) => void;
   deleteApp: (appId: string) => void;
@@ -524,8 +524,10 @@ const initialApps: HeloApp[] = [
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const { isSignedIn } = useAuth();
+  const clerk = useClerk();
+
   const [state, setState] = useState<AppState>({
-    isAuthenticated: false,
     accountStatus: "active",
     blockingIssues: ["WhatsApp Business verification pending approval"],
     accountName: "Acme Corp",
@@ -535,18 +537,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     currentUserRole: "admin",
   });
 
+  const isAuthenticated = !!isSignedIn;
+
   const currentApp = state.apps.find((a) => a.id === state.currentAppId) || null;
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    if (email && password) {
-      setState((prev) => ({ ...prev, isAuthenticated: true }));
-      return true;
-    }
-    return false;
+  const logout = () => {
+    setState((prev) => ({ ...prev, currentAppId: null }));
+    clerk.signOut();
   };
-
-  const logout = () => setState((prev) => ({ ...prev, isAuthenticated: false, currentAppId: null }));
 
   const createApp = (name: string, email: string, environment: AppEnvironment, description: string, invitedDevelopers: string[]) => {
     const defaultCredential: AppCredential = {
@@ -759,8 +757,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider
       value={{
         ...state,
+        isAuthenticated,
         currentApp,
-        login, logout, createApp, deleteApp, duplicateApp, selectApp,
+        logout, createApp, deleteApp, duplicateApp, selectApp,
         rotateApiKey, updateProduct, setWebhookUrl,
         toggleCapability, requestCapabilityAccess,
         updateAccountName, updateTimezone,

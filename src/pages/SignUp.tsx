@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useApp } from "@/contexts/AppContext";
+import { useSignUp } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +20,7 @@ export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const { login } = useApp();
+  const { signUp, setActive } = useSignUp();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -42,23 +42,46 @@ export default function SignUp() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
+    if (!signUp) return;
+
     setIsLoading(true);
-    const success = await login(email, password);
-    if (success) {
-      toast({ title: "Account created", description: "Welcome to helo.ai Developer Console." });
-      navigate("/apps");
+    try {
+      const [firstName, ...lastParts] = fullName.trim().split(" ");
+      const lastName = lastParts.join(" ") || undefined;
+
+      const result = await signUp.create({
+        emailAddress: email,
+        password,
+        firstName,
+        lastName,
+      });
+
+      if (result.status === "complete" && setActive) {
+        await setActive({ session: result.createdSessionId });
+        toast({ title: "Account created", description: "Welcome to helo.ai Developer Console." });
+        navigate("/apps");
+      } else {
+        // May need email verification - show message
+        toast({ title: "Verification needed", description: "Please check your email to verify your account." });
+      }
+    } catch (err: any) {
+      const message = err?.errors?.[0]?.longMessage || err?.errors?.[0]?.message || "Could not create account.";
+      toast({ title: "Sign up failed", description: message, variant: "destructive" });
     }
     setIsLoading(false);
   };
 
-  const handleSocialLogin = async (provider: string) => {
-    setIsLoading(true);
-    const success = await login(`${provider}@mock.com`, "mock");
-    if (success) {
-      toast({ title: "Account created", description: `Signed up with ${provider}.` });
-      navigate("/apps");
+  const handleGoogleSignUp = async () => {
+    if (!signUp) return;
+    try {
+      await signUp.authenticateWithRedirect({
+        strategy: "oauth_google",
+        redirectUrl: "/sso-callback",
+        redirectUrlComplete: "/apps",
+      });
+    } catch (err: any) {
+      toast({ title: "OAuth error", description: err?.errors?.[0]?.message || "Could not start Google sign-up.", variant: "destructive" });
     }
-    setIsLoading(false);
   };
 
   return (
@@ -140,7 +163,7 @@ export default function SignUp() {
         </div>
 
         <div className="space-y-2">
-          <Button variant="outline" className="w-full" onClick={() => handleSocialLogin("Google")} disabled={isLoading}>
+          <Button variant="outline" className="w-full" onClick={handleGoogleSignUp} disabled={isLoading}>
             Continue with Google
           </Button>
         </div>
