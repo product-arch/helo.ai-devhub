@@ -14,8 +14,8 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
       {/* Left panel - branding */}
       <div className="hidden md:flex md:w-[480px] lg:w-[520px] dither-bg flex-col justify-between p-10">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight text-gray-900">helo.ai</h1>
-          <p className="text-sm text-gray-600 mt-1">Developer Console</p>
+          <h1 className="text-xl font-semibold tracking-tight font-mono text-[#a80000]">Helo.ai</h1>
+          <p className="text-sm text-gray-600 mt-1 font-bold font-mono">Developer Console</p>
         </div>
 
         <div className="space-y-6">
@@ -25,14 +25,14 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-xs text-gray-600">
               <Shield className="h-4 w-4 text-[#EF1645]/60 shrink-0" />
-              <span>256-bit TLS encryption</span>
+              <span className="font-bold text-[#420000] font-mono">256-bit TLS encryption</span>
             </div>
-            <div className="flex items-center gap-3 text-xs text-gray-600">
+            <div className="flex items-center gap-3 text-xs text-[#520000] font-bold font-mono">
               <CheckCircle className="h-4 w-4 text-[#EF1645]/60 shrink-0" />
-              <span>SOC 2 Type II compliant</span>
+              <span className="text-[#420000] font-mono">SOC 2 Type II compliant</span>
             </div>
-            <div className="flex items-center gap-3 text-xs text-gray-600">
-              <Clock className="h-4 w-4 text-[#EF1645]/60 shrink-0" />
+            <div className="flex items-center gap-3 text-xs text-[#420000] font-mono font-bold">
+              <Clock className="h-4 w-4 text-[#EF1645]/60 shrink-0 font-extrabold font-mono" />
               <span>99.99% uptime SLA</span>
             </div>
           </div>
