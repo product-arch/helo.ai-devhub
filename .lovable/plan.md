@@ -1,71 +1,70 @@
 
 
-# Redesign WhatsApp Getting Started Page
+# Enhance WhatsApp Getting Started Page — Phase 2
 
 ## Overview
 
-A major overhaul of `src/components/WhatsAppGettingStarted.tsx` adding an onboarding stepper, live API key injection with masking, syntax-highlighted code blocks, expanded language tabs (5 languages), and an annotated response panel.
+Add dynamic message type forms, phone number validation with country flags, a "What's Next" section, and an improved History tab empty state to the existing Getting Started page.
 
 ## Changes
 
-### 1. Onboarding Stepper Component
+### 1. Dynamic Message Type Form (lines 564-609)
 
-Add a horizontal 4-step progress bar above all content:
-- **Step 1**: Get your API Key — complete when `apiKey` is non-empty
-- **Step 2**: Set Authorization Header — auto-complete (shown inline in step 1's card)
-- **Step 3**: Confirm Base URL — complete when user scrolls past or views the Base URL card
-- **Step 4**: Send your First Message — complete when `currentResponse` is set
+Replace the single textarea with type-specific fields based on `messageType`:
 
-Visual: circles connected by lines, filled check when done, brand primary highlight on active step. Rendered as a new `OnboardingStepper` sub-component inside the file.
+| Type | Fields |
+|------|--------|
+| Text | "Message body" textarea |
+| Image | "Image URL" input + "Caption" input (optional) |
+| Template | "Template name" input + "Language code" input + "Parameters" textarea |
+| Document | "Document URL" input + "Filename" input |
 
-### 2. Live API Key Injection + Masking
+Add `"Document"` to the Select options. Update `buildPayload()` to accept structured state (an object with all fields) and produce the correct payload shape per type:
+- Image: `{ image: { link, caption } }`
+- Template: `{ template: { name, language: { code }, components: [...] } }`
+- Document: `{ document: { link, filename } }`
 
-- Already partially implemented — API key flows into code generators. Enhance with:
-  - **Show/hide toggle** (Eye/EyeOff icon) on the API key input field
-  - **"Key applied" badge** — green checkmark + text appears next to the input when a value is entered
-  - Add PHP and Node.js (axios) generators that also receive the `apiKey` param
+Replace `messageBody` state with a `messageFields` state object. Update all 5 code generators to use the new payload structure.
 
-### 3. Enhanced Code Blocks with Syntax Highlighting
+### 2. Phone Number Input with Country Flag (lines 566-575)
 
-Replace the plain `CodeBlock` component with a `SyntaxHighlightedCodeBlock`:
-- Use regex-based token coloring (no external library needed):
-  - **Strings** (quoted values): `text-green-400`
-  - **Keys** (JSON keys, HTTP headers): `text-blue-400`
-  - **Numbers**: `text-amber-400`
-  - **HTTP methods** (GET, POST, etc.): `text-purple-400`
-  - **Comments**: `text-muted-foreground`
-- Larger padding, `leading-relaxed`, slightly bigger font
-- Copy button always visible (top-right), "Copied!" state for 2s
+- Add a small country-flag-to-dialing-code map (top ~20 countries) as a const
+- On input change: strip spaces/dashes/parens, match prefix to flag emoji, display it left of the input
+- Validate with regex `/^\+[1-9]\d{6,14}$/` — show green border (`border-green-500`) when valid, red border + helper text when invalid and non-empty
+- Store cleaned value in `to` state
 
-### 4. Expand Language Tabs to 5
+### 3. "What's Next?" Section (after the request tester card, line ~654)
 
-Add two new code generators:
-- `generatePhp(apiKey, to, type, body)` — full PHP cURL snippet
-- `generateNodeAxios(apiKey, to, type, body)` — axios-based Node.js snippet
+Three horizontal cards using a grid layout:
 
-Tab order: cURL | JavaScript | Python | PHP | Node.js (axios)
+| Card | Icon | Title | Description | CTA |
+|------|------|-------|-------------|-----|
+| 1 | `Bell` | Webhooks & Receiving Messages | Set up a webhook to receive inbound messages... | Read the docs → |
+| 2 | `FileText` | Message Templates | Use pre-approved templates to send notifications... | Browse templates → |
+| 3 | `Paperclip` | Supported Media Types | Send images, PDFs, audio, and video... | View media guide → |
 
-### 5. Annotated Response Panel
+Cards: `hover:shadow-md hover:-translate-y-0.5 transition-all duration-200`, subtle border, consistent icon sizing.
 
-After response appears:
-- Add a **Raw / Annotated** toggle (two small buttons or tabs) above the response body
-- **Raw view**: current JSON display
-- **Annotated view**: render each top-level and nested JSON field with an inline muted label explaining it:
-  - `messaging_product` → "Platform used for delivery"
-  - `contacts[].input` → "The number you sent to"
-  - `contacts[].wa_id` → "Recipient's WhatsApp ID (without +)"
-  - `messages[].id` → "Unique message ID — use this to track delivery status"
-- **Status badge**: combine status, time, and timestamp into one styled badge: `"200 OK · 670ms · 11:33 AM"`
+### 4. History Tab — Enhanced Empty State + Expand/Collapse (lines 774-803)
+
+**Empty state**: Replace plain text with centered icon (`Clock`), heading "No requests yet", and subtext "Send your first message above to see it here."
+
+**Request entries**: Add a chevron toggle per entry. When expanded, show the full response JSON below in a `SyntaxCodeBlock`. Add a green POST badge and red/green status badge styling already partially in place — just refine with consistent colors.
+
+### 5. Update Code Generators
+
+All 5 generators (`generateCurl`, `generateJS`, `generatePython`, `generatePhp`, `generateNodeAxios`) need to accept the new structured `messageFields` object and produce the correct payload for each message type (Text, Image, Template, Document).
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `src/components/WhatsAppGettingStarted.tsx` | Full rewrite — add stepper, key masking, 5 language tabs, syntax highlighting, annotated response panel |
+| `src/components/WhatsAppGettingStarted.tsx` | Add Document type, dynamic form fields, phone validation with flags, What's Next cards, enhanced history empty state with expand/collapse |
 
 ## Technical Notes
 
-- No new dependencies — syntax highlighting via regex spans, stepper via Tailwind
-- All state managed locally via existing `useState` hooks plus new `completedSteps` derived state
-- Stepper auto-advances based on reactive conditions (apiKey filled, base URL viewed, response received)
+- Country flag map: ~20 entries inline (no dependency), lookup by longest prefix match
+- Phone validation: real-time on change, green/red border via conditional className
+- `messageFields` state replaces `messageBody`: `{ body, imageUrl, caption, templateName, languageCode, parameters, documentUrl, filename }`
+- All changes in a single file, no new dependencies
 
