@@ -1,48 +1,71 @@
 
 
-# OLED True Black Dark Mode Theme
+# Redesign WhatsApp Getting Started Page
 
 ## Overview
 
-Shift the dark theme from warm charcoal (7% lightness backgrounds) to pure/near-pure black with high-contrast text. Inspired by Linear and Vercel's dark modes — crisp, minimal, OLED-friendly.
+A major overhaul of `src/components/WhatsAppGettingStarted.tsx` adding an onboarding stepper, live API key injection with masking, syntax-highlighted code blocks, expanded language tabs (5 languages), and an annotated response panel.
 
 ## Changes
 
-### 1. `src/index.css` — Update `.dark` CSS variables
+### 1. Onboarding Stepper Component
 
-Replace all dark theme HSL values:
+Add a horizontal 4-step progress bar above all content:
+- **Step 1**: Get your API Key — complete when `apiKey` is non-empty
+- **Step 2**: Set Authorization Header — auto-complete (shown inline in step 1's card)
+- **Step 3**: Confirm Base URL — complete when user scrolls past or views the Base URL card
+- **Step 4**: Send your First Message — complete when `currentResponse` is set
 
-| Token | Current | New | Rationale |
-|-------|---------|-----|-----------|
-| `--background` | `0 0% 7%` | `0 0% 0%` | Pure black base |
-| `--foreground` | `0 0% 72%` | `0 0% 82%` | Brighter body text for contrast |
-| `--card` | `0 0% 10%` | `0 0% 4%` | Near-black card surfaces |
-| `--card-foreground` | `0 0% 72%` | `0 0% 82%` | Match foreground |
-| `--popover` | `0 0% 10%` | `0 0% 4%` | Match card |
-| `--popover-foreground` | `0 0% 72%` | `0 0% 82%` | Match foreground |
-| `--primary` | `0 0% 88%` | `0 0% 95%` | Near-white primary text/buttons |
-| `--primary-foreground` | `0 0% 4%` | `0 0% 0%` | Pure black on primary |
-| `--secondary` | `0 0% 13%` | `0 0% 8%` | Darker secondary surface |
-| `--secondary-foreground` | `0 0% 72%` | `0 0% 78%` | Slightly brighter |
-| `--muted` | `0 0% 13%` | `0 0% 8%` | Darker muted surface |
-| `--muted-foreground` | `0 0% 48%` | `0 0% 45%` | Subtle dimmed text |
-| `--accent` | `0 0% 14%` | `0 0% 8%` | Darker accent surface |
-| `--accent-foreground` | `0 0% 72%` | `0 0% 82%` | Brighter |
-| `--border` | `0 0% 16%` | `0 0% 12%` | Subtler borders on black |
-| `--input` | `0 0% 16%` | `0 0% 12%` | Match border |
-| `--ring` | `0 0% 30%` | `0 0% 25%` | Subtler focus ring |
-| `--sidebar-background` | `0 0% 9%` | `0 0% 0%` | Pure black sidebar |
-| `--sidebar-foreground` | `0 0% 62%` | `0 0% 70%` | Brighter sidebar text |
-| `--sidebar-accent` | `0 0% 12%` | `0 0% 8%` | Darker hover states |
-| `--sidebar-accent-foreground` | `0 0% 72%` | `0 0% 85%` | High-contrast active items |
-| `--sidebar-border` | `0 0% 16%` | `0 0% 10%` | Subtle sidebar borders |
-| `--sidebar-ring` | `0 0% 30%` | `0 0% 20%` | Subtler ring |
+Visual: circles connected by lines, filled check when done, brand primary highlight on active step. Rendered as a new `OnboardingStepper` sub-component inside the file.
 
-Status/role/destructive colors stay unchanged — they already work well on dark backgrounds.
+### 2. Live API Key Injection + Masking
+
+- Already partially implemented — API key flows into code generators. Enhance with:
+  - **Show/hide toggle** (Eye/EyeOff icon) on the API key input field
+  - **"Key applied" badge** — green checkmark + text appears next to the input when a value is entered
+  - Add PHP and Node.js (axios) generators that also receive the `apiKey` param
+
+### 3. Enhanced Code Blocks with Syntax Highlighting
+
+Replace the plain `CodeBlock` component with a `SyntaxHighlightedCodeBlock`:
+- Use regex-based token coloring (no external library needed):
+  - **Strings** (quoted values): `text-green-400`
+  - **Keys** (JSON keys, HTTP headers): `text-blue-400`
+  - **Numbers**: `text-amber-400`
+  - **HTTP methods** (GET, POST, etc.): `text-purple-400`
+  - **Comments**: `text-muted-foreground`
+- Larger padding, `leading-relaxed`, slightly bigger font
+- Copy button always visible (top-right), "Copied!" state for 2s
+
+### 4. Expand Language Tabs to 5
+
+Add two new code generators:
+- `generatePhp(apiKey, to, type, body)` — full PHP cURL snippet
+- `generateNodeAxios(apiKey, to, type, body)` — axios-based Node.js snippet
+
+Tab order: cURL | JavaScript | Python | PHP | Node.js (axios)
+
+### 5. Annotated Response Panel
+
+After response appears:
+- Add a **Raw / Annotated** toggle (two small buttons or tabs) above the response body
+- **Raw view**: current JSON display
+- **Annotated view**: render each top-level and nested JSON field with an inline muted label explaining it:
+  - `messaging_product` → "Platform used for delivery"
+  - `contacts[].input` → "The number you sent to"
+  - `contacts[].wa_id` → "Recipient's WhatsApp ID (without +)"
+  - `messages[].id` → "Unique message ID — use this to track delivery status"
+- **Status badge**: combine status, time, and timestamp into one styled badge: `"200 OK · 670ms · 11:33 AM"`
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `src/index.css` | Update all `.dark` CSS custom property values for OLED true black theme |
+| `src/components/WhatsAppGettingStarted.tsx` | Full rewrite — add stepper, key masking, 5 language tabs, syntax highlighting, annotated response panel |
+
+## Technical Notes
+
+- No new dependencies — syntax highlighting via regex spans, stepper via Tailwind
+- All state managed locally via existing `useState` hooks plus new `completedSteps` derived state
+- Stepper auto-advances based on reactive conditions (apiKey filled, base URL viewed, response received)
 
