@@ -26,7 +26,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Copy, Check, Send, ChevronDown, Clock, ExternalLink, Eye, EyeOff, CheckCircle2, Key, Globe, Rocket, MessageSquare } from "lucide-react";
+import { Copy, Check, Send, ChevronDown, ChevronRight, Clock, ExternalLink, Eye, EyeOff, CheckCircle2, Key, Globe, Rocket, MessageSquare, Bell, FileText, Paperclip } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { HeloApp, Product } from "@/contexts/AppContext";
 
@@ -47,6 +47,70 @@ interface HistoryEntry {
   requestHeaders: Record<string, string>;
   requestBody: string;
   error?: string;
+}
+
+interface MessageFields {
+  body: string;
+  imageUrl: string;
+  caption: string;
+  templateName: string;
+  languageCode: string;
+  parameters: string;
+  documentUrl: string;
+  filename: string;
+}
+
+const DEFAULT_FIELDS: MessageFields = {
+  body: "",
+  imageUrl: "",
+  caption: "",
+  templateName: "",
+  languageCode: "en_US",
+  parameters: "",
+  documentUrl: "",
+  filename: "",
+};
+
+/* ─── Country Flag Map ─── */
+
+const COUNTRY_FLAGS: [string, string][] = [
+  ["+1", "🇺🇸"],
+  ["+44", "🇬🇧"],
+  ["+91", "🇮🇳"],
+  ["+86", "🇨🇳"],
+  ["+81", "🇯🇵"],
+  ["+49", "🇩🇪"],
+  ["+33", "🇫🇷"],
+  ["+55", "🇧🇷"],
+  ["+61", "🇦🇺"],
+  ["+82", "🇰🇷"],
+  ["+39", "🇮🇹"],
+  ["+34", "🇪🇸"],
+  ["+7", "🇷🇺"],
+  ["+52", "🇲🇽"],
+  ["+62", "🇮🇩"],
+  ["+90", "🇹🇷"],
+  ["+966", "🇸🇦"],
+  ["+971", "🇦🇪"],
+  ["+234", "🇳🇬"],
+  ["+27", "🇿🇦"],
+];
+
+function getCountryFlag(phone: string): string {
+  // Match longest prefix first
+  const sorted = [...COUNTRY_FLAGS].sort((a, b) => b[0].length - a[0].length);
+  for (const [prefix, flag] of sorted) {
+    if (phone.startsWith(prefix)) return flag;
+  }
+  return "🌐";
+}
+
+function isValidPhone(phone: string): boolean {
+  return /^\+[1-9]\d{6,14}$/.test(phone);
+}
+
+function cleanPhone(raw: string): string {
+  return raw.replace(/[\s\-()]/g, "");
 }
 
 /* ─── Onboarding Stepper ─── */
@@ -100,7 +164,6 @@ function OnboardingStepper({ completedSteps, activeStep }: { completedSteps: boo
 /* ─── Syntax Highlighted Code Block ─── */
 
 function highlightCode(code: string): React.ReactNode[] {
-  // Tokenize with regex: strings, numbers, HTTP methods, keys, comments
   const tokens: React.ReactNode[] = [];
   const regex = /(#[^\n]*|\/\/[^\n]*)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|\b(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b|\b(\d+\.?\d*)\b|([a-zA-Z_][\w-]*(?=\s*[:=]))/g;
   let lastIndex = 0;
@@ -168,28 +231,50 @@ function SyntaxCodeBlock({ code, onCopy }: { code: string; onCopy?: () => void }
 
 /* ─── Code Generators (5 languages) ─── */
 
-function buildPayload(to: string, type: string, body: string) {
-  return {
+function buildPayload(to: string, type: string, fields: MessageFields) {
+  const base: any = {
     to,
     type: type.toLowerCase(),
-    ...(type === "Text"
-      ? { text: { body } }
-      : type === "Image"
-      ? { image: { link: body } }
-      : { template: { name: body } }),
   };
+  switch (type) {
+    case "Text":
+      base.text = { body: fields.body };
+      break;
+    case "Image":
+      base.image = { link: fields.imageUrl };
+      if (fields.caption) base.image.caption = fields.caption;
+      break;
+    case "Template":
+      base.template = {
+        name: fields.templateName,
+        language: { code: fields.languageCode || "en_US" },
+      };
+      if (fields.parameters.trim()) {
+        try {
+          base.template.components = JSON.parse(fields.parameters);
+        } catch {
+          base.template.parameters = fields.parameters;
+        }
+      }
+      break;
+    case "Document":
+      base.document = { link: fields.documentUrl };
+      if (fields.filename) base.document.filename = fields.filename;
+      break;
+  }
+  return base;
 }
 
-function generateCurl(apiKey: string, to: string, type: string, body: string) {
-  const payload = JSON.stringify(buildPayload(to, type, body), null, 2);
+function generateCurl(apiKey: string, to: string, type: string, fields: MessageFields) {
+  const payload = JSON.stringify(buildPayload(to, type, fields), null, 2);
   return `curl -X POST 'https://api.helo.ai/v1/messages' \\
   -H 'Authorization: Bearer ${apiKey || "YOUR_API_KEY"}' \\
   -H 'Content-Type: application/json' \\
   -d '${payload}'`;
 }
 
-function generateJS(apiKey: string, to: string, type: string, body: string) {
-  const payload = JSON.stringify(buildPayload(to, type, body), null, 2);
+function generateJS(apiKey: string, to: string, type: string, fields: MessageFields) {
+  const payload = JSON.stringify(buildPayload(to, type, fields), null, 2);
   return `const response = await fetch('https://api.helo.ai/v1/messages', {
   method: 'POST',
   headers: {
@@ -203,13 +288,9 @@ const data = await response.json();
 console.log(data);`;
 }
 
-function generatePython(apiKey: string, to: string, type: string, body: string) {
-  const bodyField =
-    type === "Text"
-      ? `"text": {"body": "${body}"}`
-      : type === "Image"
-      ? `"image": {"link": "${body}"}`
-      : `"template": {"name": "${body}"}`;
+function generatePython(apiKey: string, to: string, type: string, fields: MessageFields) {
+  const payload = buildPayload(to, type, fields);
+  const pyDict = JSON.stringify(payload, null, 4).replace(/null/g, "None").replace(/true/g, "True").replace(/false/g, "False");
   return `import requests
 
 response = requests.post(
@@ -218,18 +299,14 @@ response = requests.post(
         "Authorization": "Bearer ${apiKey || "YOUR_API_KEY"}",
         "Content-Type": "application/json",
     },
-    json={
-        "to": "${to}",
-        "type": "${type.toLowerCase()}",
-        ${bodyField},
-    },
+    json=${pyDict},
 )
 
 print(response.json())`;
 }
 
-function generatePhp(apiKey: string, to: string, type: string, body: string) {
-  const payload = JSON.stringify(buildPayload(to, type, body), null, 2);
+function generatePhp(apiKey: string, to: string, type: string, fields: MessageFields) {
+  const payload = JSON.stringify(buildPayload(to, type, fields), null, 2);
   return `<?php
 $ch = curl_init();
 curl_setopt($ch, CURLOPT_URL, "https://api.helo.ai/v1/messages");
@@ -246,8 +323,8 @@ curl_close($ch);
 echo $response;`;
 }
 
-function generateNodeAxios(apiKey: string, to: string, type: string, body: string) {
-  const payload = JSON.stringify(buildPayload(to, type, body), null, 2);
+function generateNodeAxios(apiKey: string, to: string, type: string, fields: MessageFields) {
+  const payload = JSON.stringify(buildPayload(to, type, fields), null, 2);
   return `import axios from 'axios';
 
 const { data } = await axios.post(
@@ -283,7 +360,6 @@ function AnnotatedJson({ json }: { json: string }) {
 
   function renderValue(value: any, key: string, indent: number): React.ReactNode {
     const pad = "  ".repeat(indent);
-    const annotation = ANNOTATIONS[key];
 
     if (Array.isArray(value)) {
       return (
@@ -345,7 +421,7 @@ function StatusPill({ status }: { status: number | null }) {
       variant="outline"
       className={
         isOk
-          ? "border-success/30 bg-success/10 text-success"
+          ? "border-green-500/30 bg-green-500/10 text-green-600"
           : "border-destructive/30 bg-destructive/10 text-destructive"
       }
     >
@@ -367,6 +443,29 @@ function errorExplanation(status: number | null, body: string): string | null {
   }
 }
 
+/* ─── What's Next Cards ─── */
+
+const WHATS_NEXT = [
+  {
+    icon: Bell,
+    title: "Webhooks & Receiving Messages",
+    description: "Set up a webhook to receive inbound messages and delivery updates in real time.",
+    cta: "Read the docs →",
+  },
+  {
+    icon: FileText,
+    title: "Message Templates",
+    description: "Use pre-approved templates to send notifications, alerts, and transactional messages.",
+    cta: "Browse templates →",
+  },
+  {
+    icon: Paperclip,
+    title: "Supported Media Types",
+    description: "Send images, PDFs, audio, and video — learn size limits and supported formats.",
+    cta: "View media guide →",
+  },
+];
+
 /* ─── Main Component ─── */
 
 export function WhatsAppGettingStarted({ app, appId, product }: Props) {
@@ -375,7 +474,7 @@ export function WhatsAppGettingStarted({ app, appId, product }: Props) {
   const [showKey, setShowKey] = useState(false);
   const [to, setTo] = useState("");
   const [messageType, setMessageType] = useState("Text");
-  const [messageBody, setMessageBody] = useState("");
+  const [messageFields, setMessageFields] = useState<MessageFields>({ ...DEFAULT_FIELDS });
   const [sending, setSending] = useState(false);
   const [baseUrlViewed, setBaseUrlViewed] = useState(false);
   const [responseView, setResponseView] = useState<"raw" | "annotated">("raw");
@@ -384,8 +483,15 @@ export function WhatsAppGettingStarted({ app, appId, product }: Props) {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [viewerTab, setViewerTab] = useState("response");
   const [requestExpanded, setRequestExpanded] = useState(false);
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
 
   const baseUrlRef = useRef<HTMLDivElement>(null);
+
+  // Phone validation
+  const cleanedPhone = useMemo(() => cleanPhone(to), [to]);
+  const phoneFlag = useMemo(() => getCountryFlag(cleanedPhone), [cleanedPhone]);
+  const phoneValid = useMemo(() => isValidPhone(cleanedPhone), [cleanedPhone]);
+  const phoneInvalid = useMemo(() => cleanedPhone.length > 0 && !phoneValid, [cleanedPhone, phoneValid]);
 
   // Auto-detect base URL card visibility
   useEffect(() => {
@@ -402,7 +508,7 @@ export function WhatsAppGettingStarted({ app, appId, product }: Props) {
   // Stepper state
   const completedSteps = useMemo(() => [
     apiKey.length > 0,
-    apiKey.length > 0, // auto-complete with step 1
+    apiKey.length > 0,
     baseUrlViewed,
     currentResponse !== null,
   ], [apiKey, baseUrlViewed, currentResponse]);
@@ -414,10 +520,14 @@ export function WhatsAppGettingStarted({ app, appId, product }: Props) {
     return completedSteps.length - 1;
   }, [completedSteps]);
 
+  const updateField = useCallback((key: keyof MessageFields, value: string) => {
+    setMessageFields((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
   const handleSend = useCallback(async () => {
     setSending(true);
     const startTime = performance.now();
-    const requestBody = JSON.stringify(buildPayload(to, messageType, messageBody));
+    const requestBody = JSON.stringify(buildPayload(cleanedPhone || to, messageType, messageFields));
     const headers: Record<string, string> = {
       Authorization: `Bearer ${apiKey || "YOUR_API_KEY"}`,
       "Content-Type": "application/json",
@@ -426,9 +536,10 @@ export function WhatsAppGettingStarted({ app, appId, product }: Props) {
     await new Promise((resolve) => setTimeout(resolve, 400 + Math.random() * 300));
     const elapsed = Math.round(performance.now() - startTime);
 
+    const recipientPhone = cleanedPhone || to || "+919876543210";
     const dummyResponse = {
       messaging_product: "whatsapp",
-      contacts: [{ input: to || "+919876543210", wa_id: (to || "+919876543210").replace("+", "") }],
+      contacts: [{ input: recipientPhone, wa_id: recipientPhone.replace("+", "") }],
       messages: [{ id: `wamid.${crypto.randomUUID().replace(/-/g, "")}` }],
     };
 
@@ -448,7 +559,7 @@ export function WhatsAppGettingStarted({ app, appId, product }: Props) {
     setHistory((prev) => [entry, ...prev].slice(0, 5));
     setViewerTab("response");
     setSending(false);
-  }, [apiKey, to, messageType, messageBody]);
+  }, [apiKey, to, cleanedPhone, messageType, messageFields]);
 
   const loadHistoryEntry = (entry: HistoryEntry) => {
     setCurrentResponse(entry);
@@ -563,17 +674,35 @@ export function WhatsAppGettingStarted({ app, appId, product }: Props) {
 
               {/* Form */}
               <div className="space-y-4">
+                {/* Phone Number with Flag */}
                 <div className="space-y-2">
                   <Label htmlFor="to">To</Label>
-                  <Input
-                    id="to"
-                    placeholder="+919876543210"
-                    value={to}
-                    onChange={(e) => setTo(e.target.value)}
-                    className="font-mono text-sm"
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg pointer-events-none">
+                      {phoneFlag}
+                    </span>
+                    <Input
+                      id="to"
+                      placeholder="+919876543210"
+                      value={to}
+                      onChange={(e) => setTo(e.target.value)}
+                      className={`font-mono text-sm pl-10 ${
+                        phoneValid
+                          ? "border-green-500 focus-visible:ring-green-500/30"
+                          : phoneInvalid
+                          ? "border-destructive focus-visible:ring-destructive/30"
+                          : ""
+                      }`}
+                    />
+                  </div>
+                  {phoneInvalid && (
+                    <p className="text-xs text-destructive">
+                      Use international format: +919876543210
+                    </p>
+                  )}
                 </div>
 
+                {/* Message Type */}
                 <div className="space-y-2">
                   <Label>Message type</Label>
                   <Select value={messageType} onValueChange={setMessageType}>
@@ -584,29 +713,111 @@ export function WhatsAppGettingStarted({ app, appId, product }: Props) {
                       <SelectItem value="Text">Text</SelectItem>
                       <SelectItem value="Image">Image</SelectItem>
                       <SelectItem value="Template">Template</SelectItem>
+                      <SelectItem value="Document">Document</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="messageBody">
-                    {messageType === "Image" ? "Image URL" : messageType === "Template" ? "Template name" : "Message body"}
-                  </Label>
-                  <Textarea
-                    id="messageBody"
-                    placeholder={
-                      messageType === "Image"
-                        ? "https://example.com/image.jpg"
-                        : messageType === "Template"
-                        ? "hello_world"
-                        : "Hello from helo.ai!"
-                    }
-                    value={messageBody}
-                    onChange={(e) => setMessageBody(e.target.value)}
-                    rows={3}
-                    className="font-mono text-sm"
-                  />
-                </div>
+                {/* Dynamic Fields */}
+                {messageType === "Text" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="msgBody">Message body</Label>
+                    <Textarea
+                      id="msgBody"
+                      placeholder="Hello from helo.ai!"
+                      value={messageFields.body}
+                      onChange={(e) => updateField("body", e.target.value)}
+                      rows={3}
+                      className="font-mono text-sm"
+                    />
+                  </div>
+                )}
+
+                {messageType === "Image" && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="imageUrl">Image URL</Label>
+                      <Input
+                        id="imageUrl"
+                        placeholder="https://example.com/image.jpg"
+                        value={messageFields.imageUrl}
+                        onChange={(e) => updateField("imageUrl", e.target.value)}
+                        className="font-mono text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="caption">Caption <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                      <Input
+                        id="caption"
+                        placeholder="Check out this image"
+                        value={messageFields.caption}
+                        onChange={(e) => updateField("caption", e.target.value)}
+                        className="text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {messageType === "Template" && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="templateName">Template name</Label>
+                      <Input
+                        id="templateName"
+                        placeholder="hello_world"
+                        value={messageFields.templateName}
+                        onChange={(e) => updateField("templateName", e.target.value)}
+                        className="font-mono text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="languageCode">Language code</Label>
+                      <Input
+                        id="languageCode"
+                        placeholder="en_US"
+                        value={messageFields.languageCode}
+                        onChange={(e) => updateField("languageCode", e.target.value)}
+                        className="font-mono text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="parameters">Parameters <span className="text-muted-foreground font-normal">(JSON array, optional)</span></Label>
+                      <Textarea
+                        id="parameters"
+                        placeholder='[{"type": "body", "parameters": [{"type": "text", "text": "John"}]}]'
+                        value={messageFields.parameters}
+                        onChange={(e) => updateField("parameters", e.target.value)}
+                        rows={3}
+                        className="font-mono text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {messageType === "Document" && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="documentUrl">Document URL</Label>
+                      <Input
+                        id="documentUrl"
+                        placeholder="https://example.com/invoice.pdf"
+                        value={messageFields.documentUrl}
+                        onChange={(e) => updateField("documentUrl", e.target.value)}
+                        className="font-mono text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="filename">Filename</Label>
+                      <Input
+                        id="filename"
+                        placeholder="invoice.pdf"
+                        value={messageFields.filename}
+                        onChange={(e) => updateField("filename", e.target.value)}
+                        className="text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Code snippets — 5 languages */}
@@ -619,19 +830,19 @@ export function WhatsAppGettingStarted({ app, appId, product }: Props) {
                   <TabsTrigger value="axios">Node.js (axios)</TabsTrigger>
                 </TabsList>
                 <TabsContent value="curl">
-                  <SyntaxCodeBlock code={generateCurl(apiKey, to, messageType, messageBody)} />
+                  <SyntaxCodeBlock code={generateCurl(apiKey, cleanedPhone || to, messageType, messageFields)} />
                 </TabsContent>
                 <TabsContent value="js">
-                  <SyntaxCodeBlock code={generateJS(apiKey, to, messageType, messageBody)} />
+                  <SyntaxCodeBlock code={generateJS(apiKey, cleanedPhone || to, messageType, messageFields)} />
                 </TabsContent>
                 <TabsContent value="python">
-                  <SyntaxCodeBlock code={generatePython(apiKey, to, messageType, messageBody)} />
+                  <SyntaxCodeBlock code={generatePython(apiKey, cleanedPhone || to, messageType, messageFields)} />
                 </TabsContent>
                 <TabsContent value="php">
-                  <SyntaxCodeBlock code={generatePhp(apiKey, to, messageType, messageBody)} />
+                  <SyntaxCodeBlock code={generatePhp(apiKey, cleanedPhone || to, messageType, messageFields)} />
                 </TabsContent>
                 <TabsContent value="axios">
-                  <SyntaxCodeBlock code={generateNodeAxios(apiKey, to, messageType, messageBody)} />
+                  <SyntaxCodeBlock code={generateNodeAxios(apiKey, cleanedPhone || to, messageType, messageFields)} />
                 </TabsContent>
               </Tabs>
 
@@ -652,6 +863,33 @@ export function WhatsAppGettingStarted({ app, appId, product }: Props) {
               </div>
             </CardContent>
           </Card>
+
+          {/* 5. What's Next? */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-foreground">What's next?</h2>
+            <div className="grid grid-cols-3 gap-4">
+              {WHATS_NEXT.map((card) => {
+                const Icon = card.icon;
+                return (
+                  <Card
+                    key={card.title}
+                    className="cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                  >
+                    <CardContent className="pt-6 space-y-3">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+                        <Icon className="h-5 w-5 text-primary" />
+                      </div>
+                      <h3 className="text-sm font-semibold text-foreground">{card.title}</h3>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{card.description}</p>
+                      <button className="text-xs font-medium text-primary hover:underline">
+                        {card.cta}
+                      </button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {/* RIGHT COLUMN — Response viewer (sticky) */}
@@ -685,7 +923,7 @@ export function WhatsAppGettingStarted({ app, appId, product }: Props) {
                         variant="outline"
                         className={`text-xs font-mono ${
                           currentResponse.status && currentResponse.status >= 200 && currentResponse.status < 300
-                            ? "border-success/30 bg-success/10 text-success"
+                            ? "border-green-500/30 bg-green-500/10 text-green-600"
                             : "border-destructive/30 bg-destructive/10 text-destructive"
                         }`}
                       >
@@ -774,30 +1012,53 @@ export function WhatsAppGettingStarted({ app, appId, product }: Props) {
               {viewerTab === "history" && (
                 <>
                   {history.length === 0 ? (
-                    <div className="flex items-center justify-center min-h-[300px] rounded-md border-2 border-dashed border-border">
-                      <p className="text-sm text-muted-foreground">No requests yet</p>
+                    <div className="flex flex-col items-center justify-center min-h-[300px] rounded-md border-2 border-dashed border-border gap-3">
+                      <Clock className="h-8 w-8 text-muted-foreground/50" />
+                      <div className="text-center space-y-1">
+                        <p className="text-sm font-medium text-muted-foreground">No requests yet</p>
+                        <p className="text-xs text-muted-foreground/70">Send your first message above to see it here.</p>
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-1">
-                      {history.map((entry) => (
-                        <button
-                          key={entry.id}
-                          onClick={() => loadHistoryEntry(entry)}
-                          className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-muted/60 transition-colors text-left"
-                        >
-                          <Badge variant="outline" className="font-mono text-xs shrink-0">
-                            {entry.method}
-                          </Badge>
-                          <span className="font-mono text-sm text-foreground truncate flex-1">
-                            {entry.endpoint}
-                          </span>
-                          <StatusPill status={entry.status} />
-                          <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {entry.timestamp.toLocaleTimeString()}
-                          </span>
-                        </button>
-                      ))}
+                      {history.map((entry) => {
+                        const isExpanded = expandedHistoryId === entry.id;
+                        const isOk = entry.status !== null && entry.status >= 200 && entry.status < 300;
+                        return (
+                          <div key={entry.id} className="rounded-md border border-border overflow-hidden">
+                            <button
+                              onClick={() => setExpandedHistoryId(isExpanded ? null : entry.id)}
+                              className="w-full flex items-center gap-3 p-3 hover:bg-muted/60 transition-colors text-left"
+                            >
+                              <Badge
+                                variant="outline"
+                                className="font-mono text-xs shrink-0 border-green-500/30 bg-green-500/10 text-green-600"
+                              >
+                                {entry.method}
+                              </Badge>
+                              <span className="font-mono text-sm text-foreground truncate flex-1">
+                                {entry.endpoint}
+                              </span>
+                              <StatusPill status={entry.status} />
+                              <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {entry.timestamp.toLocaleTimeString()}
+                              </span>
+                              <ChevronRight
+                                className={`h-4 w-4 text-muted-foreground transition-transform ${
+                                  isExpanded ? "rotate-90" : ""
+                                }`}
+                              />
+                            </button>
+                            {isExpanded && (
+                              <div className="border-t border-border p-3">
+                                <p className="text-xs font-medium text-muted-foreground mb-2">Response</p>
+                                <SyntaxCodeBlock code={formatJson(entry.responseBody)} />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </>
