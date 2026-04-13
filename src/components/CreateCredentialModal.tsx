@@ -504,7 +504,7 @@ export function CreateCredentialModal({ open, onOpenChange, appId }: CreateCrede
                     Affects real data and live messages
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="text-[11px] border-blue-400/30 bg-blue-400/10 text-blue-500">
+                  <Badge variant="outline" className="text-[11px] border-primary/30 bg-primary/10 text-primary">
                     Safe for testing
                   </Badge>
                 )}
@@ -776,7 +776,7 @@ export function CreateCredentialModal({ open, onOpenChange, appId }: CreateCrede
                       "text-[10px]",
                       environment === "live"
                         ? "border-warning/30 bg-warning/10 text-warning"
-                        : "border-blue-400/30 bg-blue-400/10 text-blue-500"
+                        : "border-primary/30 bg-primary/10 text-primary"
                     )}>
                       {environment === "live" ? "🟢 Live" : "🧪 Sandbox"}
                     </Badge>
