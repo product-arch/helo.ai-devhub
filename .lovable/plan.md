@@ -1,89 +1,64 @@
 
 
-# Refactor CreateCredentialModal — Enterprise-Grade 3-Step Flow
+# Implement MDX Design System as Light Mode Theme
 
 ## Overview
 
-Complete rewrite of `CreateCredentialModal.tsx` to consolidate the current confusing 4-step flow into a clean 3-step wizard with labeled stepper, environment toggle, expiry dropdown, scope presets, review summary, and `.env` download.
-
-## Step Structure
-
-```text
-  [1. Identity] ── [2. Permissions] ── [3. Review & Create]
-       ●                 ○                     ○
-```
+Apply the MDX-specified blue-primary color palette to the light `:root` theme in `index.css`, create the referenced `src/styles/theme.css` file, and update the docs files. The dark OLED theme remains untouched.
 
 ## Changes
 
-### 1. Labeled Step Indicator
-Replace the 3 plain colored bars with a proper horizontal stepper: numbered circles connected by lines, step label below each. Active step = primary color, completed = checkmark icon, future = muted. Rendered for steps 1–3; hidden after creation (reveal state).
+### 1. Update Light Mode Colors in `src/index.css`
 
-### 2. Step 1 — Identity
-Combine type selection + name + environment + expiry into one step:
-- **Credential Name** (required, first field)
-- **Type selector** (existing card UI, moved here from old step 1)
-- **Environment toggle**: two buttons `[🟢 Live]` / `[🧪 Sandbox]`, with contextual badge (amber for live, blue for sandbox). Key prefix preview at bottom: `helo_live_••••••••••` or `helo_test_••••••••••`
-- **Expiry dropdown** (`<Select>`): 30d / 60d / 90d (default) / 1 year / No expiry. Remove `isPermanent` boolean + Switch entirely. Compute `expiresAt` from selection.
+Replace the `:root` CSS variables (lines 8-76) with HSL equivalents of the MDX-specified rgba values:
 
-### 3. Step 2 — Permissions
-Move all scope config here. Remove `max-h-48` constraint — let modal scroll internally (up to 80vh).
-- **Quick-select preset pills** at top: `[Full Access]` / `[Send Only]` / `[Read Only]` — auto-check correct scopes
-- **Per-product scope grid** with count badge: `"WhatsApp · 2 of 4 selected"`
-- **Select All** checkbox more prominent per product
-- **Access Summary** text at bottom: `"This key can: Send messages · Read templates"`
-- **Scope tooltips**: hover on `wa.template` → "Create & send message templates", etc.
-- **OAuth 2.0 section** (grant types, redirect URIs, token lifetimes) shown below scopes under "OAuth 2.0 Configuration" heading when type is `oauth2`
-- **Service Account section** (PEM upload) shown below scopes under "Service Account Configuration" heading when type is `service_account`
+| Token | Current HSL | New HSL (from MDX rgba) |
+|-------|------------|------------------------|
+| `--primary` | `240 5.9% 10%` | `207 65% 53%` (rgba 49,134,223) |
+| `--primary-foreground` | `0 0% 98%` | `0 0% 100%` |
+| `--secondary` | `240 4.8% 95.9%` | `0 0% 100%` |
+| `--secondary-foreground` | `240 5.9% 10%` | `200 15% 9%` (rgba 20,24,27) |
+| `--background` | `0 0% 100%` | `0 0% 100%` (same) |
+| `--foreground` | `240 10% 3.9%` | `200 15% 9%` (rgba 20,24,27) |
+| `--muted` | `240 4.8% 95.9%` | `180 3% 95%` (rgba 242,243,243) |
+| `--muted-foreground` | `240 3.8% 46.1%` | `200 5% 43%` (rgba 103,110,115) |
+| `--accent` | `240 4.8% 95.9%` | `207 87% 97%` (rgba 240,248,254) |
+| `--accent-foreground` | `240 5.9% 10%` | `207 65% 53%` (rgba 49,134,223) |
+| `--destructive` | `0 84.2% 60.2%` | `350 80% 52%` (rgba 237,28,52) |
+| `--border` | `240 5.9% 90%` | `200 3% 82%` (rgba 206,209,211) |
+| `--input` | `240 5.9% 90%` | `0 0% 100%` (rgba 255,255,255) |
+| `--ring` | `240 5.9% 10%` | `207 65% 53%` (rgba 49,134,223) |
+| Sidebar tokens | current values | MDX-specified equivalents |
 
-### 4. Step 3 — Review & Create
-Read-only summary card:
-- Name, Type (with icon), Environment badge, Expiry, Scopes as badge pills
-- For OAuth: grant types + redirect URI count
-- Warning text: "Your secret will only be shown once after creation."
-- CTA: "Generate Credential" with loading spinner
+Also add `--input-background` variable and chart color variables (`--chart-1` through `--chart-5`) to `:root`.
 
-**Post-creation reveal** (transforms step 3 in-place, no step 4):
-- Green checkmark header
-- Amber one-time warning banner
-- SecretRow component(s) (unchanged)
-- **"Download as .env"** button — generates and downloads:
-  ```
-  # helo.ai API Credentials
-  # Generated: [ISO timestamp]
-  # Credential: [name]
-  # Environment: [live/sandbox]
-  HELO_API_KEY=helo_live_xxxxx
-  HELO_BASE_URL=https://api.helo.ai/v1
-  HELO_ENVIRONMENT=live
-  ```
-  For OAuth: `HELO_CLIENT_ID` + `HELO_CLIENT_SECRET`
-- ConsentFlowPreview collapsible (kept for OAuth auth_code)
-- Credential ID card
-- Confirmation checkbox + Done button
+### 2. Create `src/styles/theme.css`
 
-### 5. Environment in Key Generation
-New `environment` state: `"live" | "sandbox"` (default `"live"`).
-- API key prefix: `helo_live_` or `helo_test_`
-- Stored on credential object
-- Used in `.env` download
+Create this file as a reference/customization entry point containing all CSS variables with comments, as described in the MDX. This file will be imported by `index.css` or `main.tsx`. It serves as the user-editable theme file the MDX docs reference.
 
-### 6. Visual Polish
-- Modal `sm:max-w-xl` (from `sm:max-w-lg`)
-- Step transitions: CSS fade between steps
-- Scope permission tooltips with human-readable descriptions
-- `onOpenChange` uses step 3 reveal check instead of step 4
+### 3. Update `src/docs/` Files
 
-### Preserved (unchanged)
-- `SecretRow` component
-- `ConsentFlowPreview` collapsible
-- `validatePEM` function
-- `isValidRedirectUri` function
-- `handleToggleScope`, `handleSelectAllProduct`, `isScopeSelected` logic
-- `AppContext` types and `createCredential` signature
+Replace `src/docs/design-system-instructions.mdx` and `src/docs/design-system-quick-reference.mdx` with the uploaded versions (content is identical, this is a no-op but ensures they stay in sync).
+
+### 4. Add `input-background` to Tailwind Config
+
+Add `input-background` color token to `tailwind.config.ts` so `bg-input-background` works as documented in the MDX.
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `src/components/CreateCredentialModal.tsx` | Full rewrite — 3-step flow, environment toggle, expiry dropdown, scope presets, labeled stepper, `.env` download, review summary |
+| `src/index.css` | Update `:root` light-mode variables to match MDX color spec |
+| `src/styles/theme.css` | New file -- design token reference with all CSS variables |
+| `tailwind.config.ts` | Add `input-background` color token |
+| `src/docs/design-system-instructions.mdx` | Sync with uploaded version |
+| `src/docs/design-system-quick-reference.mdx` | Sync with uploaded version |
+
+## What stays the same
+
+- `.dark` theme block (OLED aesthetic preserved)
+- All existing UI components
+- Typography scale and font weight variables
+- Status badge utilities
+- Role color tokens
 
