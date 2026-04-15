@@ -1,0 +1,73 @@
+/*
+ * helo.ai Design System — Theme Tokens
+ * ======================================
+ * Edit the CSS variables below to customize the design system.
+ * All components reference these tokens via Tailwind classes.
+ *
+ * This file is imported by index.css and serves as the single
+ * source of truth for color, typography, and spacing tokens.
+ */
+
+/*
+ * Light mode tokens are defined in :root {} inside src/index.css.
+ * Dark mode tokens are defined in .dark {} inside src/index.css.
+ *
+ * Color reference (light mode):
+ *
+ *   --primary:              207 65% 53%    (rgba 49, 134, 223)
+ *   --primary-foreground:   0 0% 100%      (white)
+ *   --secondary:            0 0% 100%      (white)
+ *   --secondary-foreground: 200 15% 9%     (rgba 20, 24, 27)
+ *   --background:           0 0% 100%      (white)
+ *   --foreground:           200 15% 9%     (rgba 20, 24, 27)
+ *   --card:                 0 0% 100%      (white)
+ *   --card-foreground:      200 15% 9%     (rgba 20, 24, 27)
+ *   --popover:              0 0% 100%      (white)
+ *   --popover-foreground:   200 15% 9%     (rgba 20, 24, 27)
+ *   --muted:                180 3% 95%     (rgba 242, 243, 243)
+ *   --muted-foreground:     200 5% 43%     (rgba 103, 110, 115)
+ *   --accent:               207 87% 97%    (rgba 240, 248, 254)
+ *   --accent-foreground:    207 65% 53%    (rgba 49, 134, 223)
+ *   --destructive:          350 80% 52%    (rgba 237, 28, 52)
+ *   --destructive-foreground: 0 0% 100%   (white)
+ *   --border:               200 3% 82%     (rgba 206, 209, 211)
+ *   --input:                0 0% 100%      (white)
+ *   --input-background:     0 0% 100%      (white)
+ *   --ring:                 207 65% 53%    (rgba 49, 134, 223)
+ *
+ * Chart colors:
+ *   --chart-1: 207 65% 53%   (blue)
+ *   --chart-2: 142 69% 41%   (green)
+ *   --chart-3: 350 80% 52%   (red)
+ *   --chart-4: 24 92% 44%    (orange)
+ *   --chart-5: 200 4% 53%    (grey)
+ *
+ * Sidebar:
+ *   --sidebar-background:          0 0% 100%
+ *   --sidebar-foreground:          200 5% 31%
+ *   --sidebar-primary:             207 65% 53%
+ *   --sidebar-primary-foreground:  0 0% 100%
+ *   --sidebar-accent:              207 87% 97%
+ *   --sidebar-accent-foreground:   207 65% 53%
+ *   --sidebar-border:              200 4% 90%
+ *   --sidebar-ring:                207 65% 53%
+ *
+ * Typography scale:
+ *   --text-xs:      0.75rem   (12px)
+ *   --text-sm:      0.875rem  (14px)
+ *   --text-base:    1rem      (16px)
+ *   --text-lg:      2.5rem    (40px)
+ *   --text-xl:      3rem      (48px)
+ *   --text-2xl:     3.5rem    (56px)
+ *   --text-caption: 0.75rem   (12px)
+ *   --text-badge:   0.875rem  (14px)
+ *
+ * Font weights:
+ *   --font-weight-normal:    400
+ *   --font-weight-medium:    500
+ *   --font-weight-semi-bold: 600
+ *   --font-weight-bold:      700
+ *
+ * Border radius:
+ *   --radius: 0.5rem (8px)
+ */
