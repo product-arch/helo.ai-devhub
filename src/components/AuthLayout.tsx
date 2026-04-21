@@ -12,7 +12,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left panel - branding */}
-      <div className="hidden md:flex md:w-[480px] lg:w-[520px] dither-bg flex-col justify-between p-10">
+      <div className="hidden md:flex md:w-[480px] lg:w-[520px] geometric-bg flex-col justify-between p-10">
         <div>
           <h1 className="text-xl font-semibold tracking-tight font-mono text-[#a80000]">Helo.ai</h1>
           <p className="text-sm text-gray-600 mt-1 font-bold font-mono">Developer Console</p>
@@ -49,7 +49,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
       </div>
 
       {/* Mobile header */}
-      <div className="md:hidden dither-bg px-6 py-5 flex items-center justify-between">
+      <div className="md:hidden geometric-bg geometric-bg--compact px-6 py-5 flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold text-gray-900 tracking-tight">helo.ai</h1>
           <p className="text-xs text-gray-600">Developer Console</p>
