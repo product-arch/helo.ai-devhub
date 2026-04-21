@@ -1,64 +1,85 @@
 
 
-# Implement MDX Design System as Light Mode Theme
+# Bauhaus Geometric Pattern for Auth Left Panel
 
 ## Overview
 
-Apply the MDX-specified blue-primary color palette to the light `:root` theme in `index.css`, create the referenced `src/styles/theme.css` file, and update the docs files. The dark OLED theme remains untouched.
+Replace the current `dither-bg` halftone dot pattern on the Login/Sign Up left panel with a layered, Bauhaus-style geometric composition (circles, semicircles, triangles, striped rectangles, dot grids) rendered in the existing red-to-pink palette. The pattern clusters on the right edge of the left panel, leaving the upper-left area clean for the Helo.ai branding and feature list.
+
+## Reference Interpretation
+
+Source image traits to translate:
+- Solid filled shapes: full circles, half-circles, quarter-circles, triangles, rectangles
+- Striped/lined fills inside shapes (horizontal, vertical, diagonal/chevron)
+- Two scattered dot grids (one upper-left, one lower-center) acting as texture
+- Single thin horizontal accent line
+- Clean cream background on the left, dense composition on the right
+
+Color remap (greens/yellows/orange → existing brand palette):
+- `#EF1645` (brand red) — primary solid fills
+- `#a80000` / `#420000` (deep maroon) — dark accent shapes
+- `#FFDFDF` (existing pink) — light fills / current background
+- `#FFB8C5` (mid pink) — secondary fills
+- `#F8C8C8` (warm beige equivalent of cream) — neutral block fills
 
 ## Changes
 
-### 1. Update Light Mode Colors in `src/index.css`
+### 1. New `.geometric-bg` utility in `src/index.css`
 
-Replace the `:root` CSS variables (lines 8-76) with HSL equivalents of the MDX-specified rgba values:
+Add a new background utility (keep `.dither-bg` available as fallback). Build the composition with **layered SVG `data:` URIs** in `background-image` so it stays a pure CSS class — no new component, no asset files.
 
-| Token | Current HSL | New HSL (from MDX rgba) |
-|-------|------------|------------------------|
-| `--primary` | `240 5.9% 10%` | `207 65% 53%` (rgba 49,134,223) |
-| `--primary-foreground` | `0 0% 98%` | `0 0% 100%` |
-| `--secondary` | `240 4.8% 95.9%` | `0 0% 100%` |
-| `--secondary-foreground` | `240 5.9% 10%` | `200 15% 9%` (rgba 20,24,27) |
-| `--background` | `0 0% 100%` | `0 0% 100%` (same) |
-| `--foreground` | `240 10% 3.9%` | `200 15% 9%` (rgba 20,24,27) |
-| `--muted` | `240 4.8% 95.9%` | `180 3% 95%` (rgba 242,243,243) |
-| `--muted-foreground` | `240 3.8% 46.1%` | `200 5% 43%` (rgba 103,110,115) |
-| `--accent` | `240 4.8% 95.9%` | `207 87% 97%` (rgba 240,248,254) |
-| `--accent-foreground` | `240 5.9% 10%` | `207 65% 53%` (rgba 49,134,223) |
-| `--destructive` | `0 84.2% 60.2%` | `350 80% 52%` (rgba 237,28,52) |
-| `--border` | `240 5.9% 90%` | `200 3% 82%` (rgba 206,209,211) |
-| `--input` | `240 5.9% 90%` | `0 0% 100%` (rgba 255,255,255) |
-| `--ring` | `240 5.9% 10%` | `207 65% 53%` (rgba 49,134,223) |
-| Sidebar tokens | current values | MDX-specified equivalents |
+Layers, top-to-bottom:
+1. **Right-cluster SVG**: a single SVG containing the dense Bauhaus shape arrangement (circles, semicircles, striped rectangles, triangles, quarter-arcs) sized to roughly the right 55% of the panel. `background-position: right top`, `background-size: auto 100%`, `no-repeat`.
+2. **Upper-left dot grid**: small radial-gradient dots in deep red at low opacity, ~12px tile, masked to the top-left ~30% via `background-size` + `background-position`.
+3. **Lower-center dot grid**: same dots, denser, positioned bottom-center.
+4. **Thin horizontal accent line**: linear-gradient strip in `#EF1645` at ~45% from top.
+5. **Base color**: `#FFF5F5` (cream-pink) base, slightly warmer than current `#FFDFDF` so shapes pop.
 
-Also add `--input-background` variable and chart color variables (`--chart-1` through `--chart-5`) to `:root`.
+The SVG itself (inline, URL-encoded) contains roughly 18–24 shapes:
+- 3 large solid circles in `#EF1645`, `#a80000`, `#FFB8C5`
+- 2 half-circles
+- 2 quarter-arcs hugging panel edges
+- 3 striped rectangles (horizontal stripes, vertical stripes, chevron) using `<pattern>` elements
+- 2 solid triangles
+- 1 small white dot accent (matches the white dot in the reference)
+- Several small filled circles as "punctuation"
 
-### 2. Create `src/styles/theme.css`
+### 2. Update `src/components/AuthLayout.tsx`
 
-Create this file as a reference/customization entry point containing all CSS variables with comments, as described in the MDX. This file will be imported by `index.css` or `main.tsx`. It serves as the user-editable theme file the MDX docs reference.
+- Swap `dither-bg` → `geometric-bg` on both the desktop left panel (line 15) and the mobile header (line 52).
+- Mobile header gets a compressed variant via an extra modifier class `geometric-bg--compact` that scales the SVG down so a strip of pattern still reads on a short header.
+- Keep all branding text, icons, and theme toggle untouched. Ensure text contrast remains readable on the cream base by leaving the upper-left clear of dense shapes (the SVG cluster is anchored to `right top`).
 
-### 3. Update `src/docs/` Files
+### 3. No changes to
 
-Replace `src/docs/design-system-instructions.mdx` and `src/docs/design-system-quick-reference.mdx` with the uploaded versions (content is identical, this is a no-op but ensures they stay in sync).
-
-### 4. Add `input-background` to Tailwind Config
-
-Add `input-background` color token to `tailwind.config.ts` so `bg-input-background` works as documented in the MDX.
+- Color tokens in `index.css` `:root`
+- Dark theme
+- Login / Sign Up form panels (right side)
+- Any other component
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `src/index.css` | Update `:root` light-mode variables to match MDX color spec |
-| `src/styles/theme.css` | New file -- design token reference with all CSS variables |
-| `tailwind.config.ts` | Add `input-background` color token |
-| `src/docs/design-system-instructions.mdx` | Sync with uploaded version |
-| `src/docs/design-system-quick-reference.mdx` | Sync with uploaded version |
+| `src/index.css` | Add `.geometric-bg` utility (and `.geometric-bg--compact` modifier) with layered SVG + radial-gradient + linear-gradient backgrounds in the red/pink palette |
+| `src/components/AuthLayout.tsx` | Replace `dither-bg` class with `geometric-bg` on desktop panel; use `geometric-bg geometric-bg--compact` on the mobile header |
 
-## What stays the same
+## Visual Result
 
-- `.dark` theme block (OLED aesthetic preserved)
-- All existing UI components
-- Typography scale and font weight variables
-- Status badge utilities
-- Role color tokens
+```text
+┌──────────────────────────────┬───────────────┐
+│ Helo.ai                      │               │
+│ Developer Console            │               │
+│                              │   ◐ ▦ ▲ ●     │
+│ ····                         │  ● ▥ ◑ ▦      │
+│                              │   ▲ ● ◐ ▥     │
+│ Secure access...             │  ◑ ▦ ● ▲      │
+│ • 256-bit TLS                │               │
+│ • SOC 2 Type II              │               │
+│ • 99.99% uptime         ────────              │
+│                         · · · · · ·          │
+│ [☾]                          │               │
+└──────────────────────────────┴───────────────┘
+   ↑ branding stays readable     ↑ dense Bauhaus cluster
+```
 
