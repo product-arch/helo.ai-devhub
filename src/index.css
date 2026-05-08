@@ -158,10 +158,6 @@
   }
 }
 
-.dither-bg {
-  background-color: #FFDFDF;
-}
-
 /* Scoped teal accent for the WhatsApp Playground page only.
    Overrides primary/ring/accent in both light and dark. */
 .playground-theme {
@@ -198,7 +194,7 @@
 .pg-pulse-glow { animation: pg-pulse-glow 1.6s ease-out 1; }
 .pg-shake      { animation: pg-shake 360ms ease-in-out 1; }
 
-.dither-bg-orig {
+.dither-bg {
   background-color: #FFDFDF;
   background-image:
     /* Large bubble grid */
