@@ -1,149 +1,135 @@
-# WhatsApp API Playground — Full Rewrite
 
-## Overview
+# SMS Messaging — Quick Start & Production Config
 
-Rebuild `src/components/WhatsAppGettingStarted.tsx` into a production-grade, conversion-focused playground that addresses every functionality, UX, and UI gap in the brief. Theme follows the global light/dark toggle but introduces a scoped electric-teal accent for this page only. All API calls are simulated locally (no network) — realistic latency, status codes, and error payloads.
+Replace the current generic SMS product detail (rendered by `src/pages/ProductDetail.tsx` via `productConfigs.sms`) with a dedicated, two-layer page modeled after the WhatsApp Playground but tuned to the **"send a test SMS in under 60 seconds"** north star.
 
-## Architecture
+## North star
 
-Split the monolith into focused files under `src/components/whatsapp/`:
+A developer landing on `/apps/:appId/products/sms` can send a real (simulated) SMS within 60 seconds with zero navigation. Quick Start (Layer 1) is always above the fold; Production Config (Layer 2) is collapsed by default.
+
+## Routing & integration
+
+- `ProductDetail.tsx`: when `productId === "sms"`, render new `<SmsDetailPage />` inside `DashboardLayout` with the existing `PageHeader` (breadcrumb: Apps › [App] › SMS Messaging, status badge "Active", subheading, "View full API reference →" link).
+- All other product routes untouched.
+
+## File structure
+
+New folder `src/components/sms/`:
 
 ```text
-src/components/whatsapp/
-  PlaygroundPage.tsx            // top-level layout, sticky 60/40 grid
-  EnvSwitcher.tsx               // Sandbox | Production pill + banner
-  Stepper.tsx                   // 4-step, 3-state, clickable, persisted
-  RateLimitMeter.tsx            // 47/100 per minute, color thresholds
-  ApiHealthDot.tsx              // operational/degraded/incident
-  ApiKeyPanel.tsx               // copy/regenerate/visibility
-  SendForm/
-    index.tsx                   // orchestrates message-type sub-forms
-    PhoneInput.tsx              // E.164 + country picker + saved numbers
-    TextForm.tsx
-    TemplateForm.tsx            // searchable picker + variable mapping + preview
-    MediaForm.tsx               // image/video/audio/document
-    InteractiveForm.tsx         // buttons + list builder
-    LocationForm.tsx
-    ReactionForm.tsx
-    WhatsAppPreview.tsx         // mobile chat-bubble preview
-  CodeSnippets.tsx              // 11 langs, live-updates, key inject toggle
-  ResponsePanel.tsx             // ghost sample → real, metadata bar, copy
-  HistoryTab.tsx                // last 10, click-to-replay
-  WebhookSimulator.tsx          // collapsible, simulates inbound POST
-  WhatsNext.tsx                 // 3 cards w/ recommended-path badge
+sms/
+  SmsDetailPage.tsx          // page composition (header + Layer 1 + Layer 2)
+  QuickStart/
+    QuickStartPanel.tsx      // 3-step stepper container, persists step state
+    StepCredentials.tsx      // Step 1 — masked key/secret, reveal, copy
+    StepSandboxSender.tsx    // Step 2 — auto-provision sandbox sender
+    StepSendTest.tsx         // Step 3 — send + DLR poller + code tabs
+    DlrStatusTimeline.tsx    // Queued → Sent → Delivered visual
+    CodeSnippetTabs.tsx      // curl | Node | Python | PHP, prefilled
+    Confetti.tsx             // tiny canvas/CSS confetti on Delivered
+  Production/
+    ProductionConfig.tsx     // 4 collapsible sections (Accordion)
+    SenderIdsSection.tsx     // table + Register modal (side Sheet)
+    DltSection.tsx           // PE ID, headers, templates
+    DlrSection.tsx           // toggle, webhook URL, test, sample payload
+    SettingsSection.tsx      // encoding, unicode, long-msg, retries
   lib/
-    simulator.ts                // mockSend(payload, env) → response w/ latency
-    snippets.ts                 // builders for cURL, JS fetch, JS axios, Python requests, Python httpx, PHP, Ruby, Go, Java, .NET, Node
-    storage.ts                  // typed localStorage helpers (history, savedNumbers, env, stepper, savedKey)
-    types.ts
-    syntax.ts                   // tiny JSON + code token highlighter (no Prism)
-    templates.ts                // mock approved templates with {{N}} vars
+    smsSimulator.ts          // mock POST /v1/messages/sms + DLR transitions
+    smsStorage.ts            // localStorage per-appId (wizard, sender ids,
+                             // DLT, DLR, settings, sandbox sender)
+    smsTypes.ts              // SmsMessage, SenderId, DltTemplate, etc.
+    smsSnippets.ts           // generators for curl/node/python/php
+    smsValidators.ts         // zod schemas (PE ID 19 digits, header 1-6
+                             // alnum, phone E.164, etc.)
 ```
 
-`src/pages/whatsapp/Playground.tsx` (or wherever current route lives) imports `PlaygroundPage`. Old `WhatsAppGettingStarted.tsx` is deleted.
+## Layer 1 — Quick Start Panel
 
-## Theming — scoped teal accent
+Sticky-ish section at top, full width, single Card with horizontal stepper header `[1] Credentials → [2] Sender → [3] Send`. Steps 1 and 2 auto-complete on successful load (green check). Step 3 completes on first successful send. Wizard completion persisted to `localStorage` key `helo:sms:wizard:<appId>`.
 
-Add a single CSS scope class `.playground-theme` in `src/index.css` overriding `--primary`, `--ring`, `--accent` to teal `162 100% 42%` for both `:root` and `.dark` so the switch works in both modes. All teal usage is via `bg-primary`, `text-primary`, `ring-primary` — no hardcoded hex. Outside this wrapper the brand red/pink is untouched.
+### Step 1 — Credentials (inline)
+- Sources from existing `AppContext` credentials for the App; if none, simulate one (`apiKey`, `apiSecret`).
+- Two read-only fields (monospace): API Key (last 6 visible, rest `●`), API Secret (fully masked).
+- Per-field "Reveal" eye toggle (state never persisted) and "Copy" button (uses `useToast`).
+- Failure path: inline alert + "Retry" button; rest of page still renders.
 
-## Layout
+### Step 2 — Sandbox Sender (auto-provisioned)
+- On mount, read/create `helo:sms:sandbox:<appId>` → `{ senderId: "+1 415 555 0123", type: "sandbox", status: "ready" }`.
+- Display chip `+1 (Sandbox) — For testing only` with green "Ready" badge and tooltip explaining shared sandbox / production registration.
+- Failure path: inline error + Retry.
 
-- Sticky two-column grid at `lg`+ : left `60%` (form, snippets, webhook sim, what's next), right `40%` sticky (response, rate limit, health, history tab).
-- Mobile (`<lg`): single column; response panel sits directly under Send button.
-- Page shell uses existing `DashboardLayout` + `PageHeader`.
+### Step 3 — Send Test Message (live tester)
+- Fields: **To** (prefilled from a faux user profile phone if available, else placeholder `+91XXXXXXXXXX`), **Message** (prefilled "Hello from helo.ai! Your SMS integration is working. 🎉").
+- Validation via zod (`+` E.164 to, message ≤ 1600 chars). Field-level errors inline.
+- Primary CTA `Send Test Message` (loading "Sending…"). Calls `smsSimulator.sendSms()` → returns `{ messageId, status: "queued" }` after 250–650ms latency.
+- DLR poller: `setInterval` 2s polling `smsSimulator.getStatus(messageId)` for ≤ 30s. Transitions Queued → Sent → Delivered with deterministic timing per messageId; small chance of `failed` with realistic error code (e.g. `21610 Unsubscribed recipient`). Cancelled on unmount and on terminal state.
+- UI: success banner with messageId + copy; `<DlrStatusTimeline>` (3 dots, animated). On Delivered: `<Confetti>` + green "Your SMS integration is working. Ready to go to production →" link to Layer 2.
+- Failure: red banner with exact code + message. "What went wrong?" expand reveals tip list keyed by error code.
+- Below: collapsed "Show request" section with `<CodeSnippetTabs>` (curl | Node.js | Python | PHP), each prefilled with the user's API key + sandbox `from` + current `to`/`body`. "Copy" per tab.
 
-## Feature spec
+## Layer 2 — Production Configuration
 
-### 1. Environment switcher
-- Sliding pill in the page header: Sandbox / Production. Persisted in localStorage.
-- Sandbox → amber full-width banner + base URL `https://sandbox.api.helo.ai/v1` + sandbox-prefixed key.
-- Production → small red `LIVE` badge next to the toggle, no banner.
-- State propagates to base URL display, code snippets, and simulator behavior (sandbox always 202, production sometimes 4xx based on input validity).
+`<Accordion type="multiple">` (shadcn) with all items closed by default. Stored open-state NOT persisted (per spec).
 
-### 2. Stepper
-- Horizontal full-width, 4 steps, 3 states (completed filled-teal-check / active glowing-teal / upcoming muted) with connector lines colored by completion.
-- Each step is a button that scrolls to and expands its inline help accordion.
-- Completion is auto-derived: key copied → 1 done, header copied → 2 done, base URL copied → 3 done, request sent → 4 done. Persisted.
-- Step 4's "complete" state shows a subtle success ribbon: "You're set up — explore webhooks next".
+### Sender IDs
+- `<Table>` columns: Sender ID, Type, Country, Status, Actions. Status badge variants for Pending/Approved/Rejected/Active.
+- `Register Sender ID` opens shadcn `<Sheet>` (side panel) with: searchable Country (`<Command>`), Type radios (Alphanumeric / Shortcode / Longcode / Toll-free), value input with type-specific zod validation. Submit → adds row with `Pending`.
+- Empty state card: "No Sender IDs registered. Add one to go live." + CTA.
 
-### 3. Send form
-- **PhoneInput**: country picker (flag + dial code), E.164 regex validation `/^\+[1-9]\d{6,14}$/`, inline error, bookmark icon to save, dropdown to load saved numbers.
-- **Message type select**: Text, Template, Image, Video, Audio, Document, Interactive (Buttons), Interactive (List), Location, Reaction.
-- **TemplateForm**: searchable combobox over mock templates (name, language, category badge, status badge). Renders one labeled input per `{{N}}` variable. Live preview in WhatsAppPreview.
-- **MediaForm**: tabbed URL / Drag-drop (drag-drop accepts file → object URL, no upload). Caption + filename for documents.
-- **InteractiveForm**: button rows (max 3, types Reply/URL/Phone) for Buttons; section + row builder (max 10 rows) for List. Live preview.
-- **LocationForm**: lat/lng/name/address.
-- **ReactionForm**: target message id + emoji.
-- **TextForm**: textarea with char counter and a tooltip showing WhatsApp formatting (`*bold*`, `_italic_`, `~strike~`, ` ```mono``` `).
-- "Pre-fill with sample data" button populates fields contextually for the selected type.
-- **WhatsAppPreview**: phone-style chat bubble preview (right side of left column on lg, below form on mobile) updates live.
+### DLT Configuration (India)
+- Top alert banner (info/warning style): "Required for sending SMS to Indian mobile numbers…"
+- PE ID input (19-digit numeric, validated), Telemarketer ID (optional).
+- **Sender Headers** sub-table (Header, DLT status, Actions) + `Add Header` modal (1–6 alnum, uppercase enforced).
+- **Message Templates** sub-table (Template ID, content truncated, Type, Status, Actions) + `Add Template` modal: textarea with live char count, Type radios (Transactional / Promotional / Service Implicit / Service Explicit), DLT Template ID input, Associated Header dropdown sourced from registered headers.
 
-### 4. Code snippets
-- Tabs: cURL, JS fetch, JS axios, Node.js, Python requests, Python httpx, PHP, Ruby, Go, Java, .NET (C#), helo SDK.
-- Built by `snippets.ts` from current form state + env. Update on every keystroke.
-- "Insert my API key" toggle swaps `YOUR_API_KEY` for the masked real key.
-- Copy button top-right → ✓ Copied for 2s.
-- Lightweight token highlighter (`syntax.ts`) — keywords, strings, numbers, comments — no external dep.
+### Delivery Receipts
+- Switch "Enable delivery receipts" (default ON).
+- Webhook URL input + `Test Webhook` button → simulates a POST and shows inline JSON response panel (mock 200 with sample DLR).
+- Read-only sample DLR JSON block + `Copy`.
 
-### 5. Response panel
-- Default: ghost sample 202 payload at 40% opacity, italic "Sample response" label.
-- After send: real payload with metadata bar — colored status pill (2xx green, 4xx/5xx red, 3xx amber), response time ms, payload size in bytes/KB.
-- Click status pill → tooltip explanation (canonical map of common codes).
-- Copy button on payload; "View in Logs →" link appears post-send (deep-links to `/logs?requestId=…`).
-- 4xx/5xx renders highlighted error code + human-readable line above the JSON.
-- Smooth fade-in / slide-up on new response. Loading state shows skeleton + spinner in Send button; success pulse; error shake.
+### Settings
+- Encoding radio (GSM-7 / UCS-2, default GSM-7).
+- "Auto-detect Unicode" `<Switch>`.
+- Long message handling radio (Concatenate / Truncate, default Concatenate).
+- Max retries `<Select>` (0/1/2/3).
+- All persisted to `helo:sms:settings:<appId>`.
 
-### 6. History tab
-- Tabbed alongside Response in the right column. Last 10 entries in localStorage, each: timestamp, To, type, status pill, time ms. Click → reload into form + response panel. Empty state copy per spec.
+## State, persistence, lifecycle
 
-### 7. Rate limit meter
-- Small bar in right column header: `Requests: N / 100 per minute`. Increments on send. Window resets after 60s. Amber at ≥80, red at ≥95. When at cap, sending returns simulated 429 with `Retry-After`.
-
-### 8. API health dot
-- Top-right of header. Green default. Hover tooltip "WhatsApp API: Operational — Last checked Xm ago". Linked to `/status` (placeholder).
-
-### 9. Webhook simulator
-- Collapsible card under send form. Inputs: From, message type, body. Renders the exact JSON payload that would be POSTed, plus a simulated webhook response (200 default; 401/500 if user toggles failure mode). No real network call.
-
-### 10. What's next
-- 3 cards (Webhooks / Templates / Media types). Recommended path computed from state:
-  - First successful send & no webhook configured → Webhooks card gets teal `Start here →` badge + warning dot.
-  - Otherwise Templates is recommended.
-
-### Simulator behavior
-`simulator.ts` returns realistic shapes:
-- 202 `{ message_id: "wamid.<rand>", status: "accepted", to, timestamp }` after 250–650 ms.
-- 400 missing-field, 401 invalid-key (when toggle off in prod-style key check), 422 unknown template, 429 rate-limit, 500 random — each with WhatsApp-shaped error payloads (`{ error: { code, title, message, details } }`).
-
-### localStorage keys
-`helo:wa:env`, `helo:wa:stepper`, `helo:wa:savedNumbers`, `helo:wa:history`, `helo:wa:apiKey`, `helo:wa:insertKey`.
-
-### Design tokens
-- Card surfaces use existing `bg-card` + `shadow-block`.
-- Primary CTA `bg-primary` (teal in scope). Secondary actions `variant="outline"` or `ghost`.
-- JSON syntax: keys `text-primary`, strings `text-emerald-400`-like via `text-[hsl(var(--success))]` token (add if missing), numbers/booleans `text-amber-400` token, punctuation `text-muted-foreground`. All tokens go through `index.css` HSL variables.
-- Status pills reuse existing semantic badge variants.
-
-### Micro-interactions
-Framer-motion not required; use Tailwind transitions + a couple of keyframes (`fade-in-up`, `pulse-glow`, `shake`) added to `tailwind.config.ts`.
-
-### Accessibility
-- Stepper buttons have `aria-current="step"`.
-- Status pills have `aria-label` "Status 202 Accepted".
-- All copy buttons announce via `aria-live="polite"` toast.
-- Keyboard: tabs, stepper, and language tabs all focusable with visible ring.
-
-## Files
-
-| File | Change |
+| Concern | Storage |
 |---|---|
-| `src/components/whatsapp/*` (new tree above) | New files implementing each piece |
-| `src/components/WhatsAppGettingStarted.tsx` | Delete; route imports `PlaygroundPage` |
-| `src/pages/ProductDetail.tsx` (or wherever WhatsApp getting-started is rendered) | Swap import to new `PlaygroundPage` |
-| `src/index.css` | Add `.playground-theme` scope overriding `--primary`/`--ring`/`--accent` to teal in both `:root` and `.dark`; add `success`/`warning` tokens if missing; add `fade-in-up`, `pulse-glow`, `shake` keyframes |
-| `tailwind.config.ts` | Register the new keyframes/animations |
+| Wizard step completion | `localStorage` per appId |
+| Sandbox sender | `localStorage` per appId |
+| Sender IDs / DLT / DLR / Settings | `localStorage` per appId |
+| API key reveal | component state only, never persisted |
+| DLR poller | `useEffect` cleanup cancels interval |
+
+## Error handling rules
+
+- Every async surface owns its own retry; failures never block siblings.
+- All API errors render with **exact code + message** (from simulator); no generic "Something went wrong".
+- DLR poll timeout (30s) → "Status unknown — check Logs & Events for delivery confirmation" with link to `/apps/:appId/logs`.
+- Forms: zod + react-hook-form (already in deps), inline field errors, no toast on validation.
+
+## Design system
+
+- Reuse existing semantic tokens (no teal scope this time — SMS uses default brand red/primary).
+- Components used: `Card`, `Accordion`, `Tabs`, `Table`, `Sheet`, `Dialog`, `Switch`, `RadioGroup`, `Select`, `Badge`, `Button`, `Input`, `Textarea`, `Tooltip`, `Alert`, `Command`. No new dependencies.
+- Stepper uses existing visual conventions from WhatsApp `Stepper.tsx` (reuse component if signature fits; otherwise small SMS-local copy).
 
 ## Out of scope
-- No new backend / edge functions (all simulated client-side).
-- No real Prism dependency (tiny inline highlighter).
-- Light-mode behavior of rest of the app and brand red/pink elsewhere stay untouched.
+
+Carrier routing, billing, shared sender pools, RBAC for sender management, analytics dashboard, other channels, edits to Products list page.
+
+## Acceptance check (mapped)
+
+1. Above-the-fold Quick Start with prefilled fields → ≤ 60s send. ✓
+2. Credentials inline, copyable, masked. ✓
+3. Sandbox sender auto-provisioned on mount. ✓
+4. Send posts to (simulated) SMS API and renders the real returned payload. ✓
+5. DLR poller drives Queued→Sent→Delivered live. ✓
+6. Code tabs prefilled with actual creds + payload. ✓
+7. DLT section prominent in Layer 2 (not under Settings). ✓
+8. Errors show exact code + message. ✓
+9. Wizard completion persisted per appId. ✓
+10. All Layer 2 accordions collapsed on first load. ✓
