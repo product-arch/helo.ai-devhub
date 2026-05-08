@@ -18,6 +18,7 @@ import { whatsappApis } from "@/data/whatsappApis";
 import { rcsApis } from "@/data/rcsApis";
 import { ApiCatalog } from "@/components/WhatsAppApiCatalog";
 import { PlaygroundPage } from "@/components/whatsapp/PlaygroundPage";
+import { SmsDetailPage } from "@/components/sms/SmsDetailPage";
 
 interface EndpointDef {
   id: string;
@@ -61,6 +62,24 @@ export default function ProductDetail() {
   const product = app?.products.find((p) => p.id === productId);
 
   if (!app || !product) return <Navigate to={appId ? `/apps/${appId}/overview` : "/apps"} replace />;
+
+  // SMS gets the dedicated Quick Start + Production Config page
+  if (productId === "sms") {
+    return (
+      <DashboardLayout>
+        <PageHeader
+          title="SMS Messaging"
+          breadcrumbs={[
+            { label: "Apps", href: "/apps" },
+            { label: app.name, href: `/apps/${appId}/overview` },
+            { label: "Products", href: `/apps/${appId}/products` },
+            { label: "SMS Messaging" },
+          ]}
+        />
+        <SmsDetailPage app={app} />
+      </DashboardLayout>
+    );
+  }
 
   // WhatsApp gets the Getting Started page
   if (productId === "whatsapp") {
