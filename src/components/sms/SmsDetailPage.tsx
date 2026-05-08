@@ -1,14 +1,14 @@
 import { ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import type { App } from "@/contexts/AppContext";
+import type { HeloApp } from "@/contexts/AppContext";
 import { QuickStartPanel } from "./QuickStart/QuickStartPanel";
 import { ProductionConfig } from "./Production/ProductionConfig";
 
 interface Props {
-  app: App;
+  app: HeloApp;
 }
 
-function pickCredentials(app: App) {
+function pickCredentials(app: HeloApp) {
   const cred = app.credentials.find((c) => c.apiKey) || app.credentials[0];
   return {
     apiKey: cred?.apiKey || app.apiKey || "helo_test_pk_missing",
