@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { whatsappApis } from "@/data/whatsappApis";
 import { rcsApis } from "@/data/rcsApis";
 import { ApiCatalog } from "@/components/WhatsAppApiCatalog";
-import { WhatsAppGettingStarted } from "@/components/WhatsAppGettingStarted";
+import { PlaygroundPage } from "@/components/whatsapp/PlaygroundPage";
 
 interface EndpointDef {
   id: string;
@@ -65,11 +65,17 @@ export default function ProductDetail() {
   // WhatsApp gets the Getting Started page
   if (productId === "whatsapp") {
     return (
-      <WhatsAppGettingStarted
-        app={app}
-        appId={appId!}
-        product={product}
-      />
+      <DashboardLayout>
+        <PageHeader
+          title="WhatsApp API Playground"
+          breadcrumbs={[
+            { label: "Apps", href: "/apps" },
+            { label: app.name, href: `/apps/${appId}/overview` },
+            { label: "WhatsApp" },
+          ]}
+        />
+        <PlaygroundPage />
+      </DashboardLayout>
     );
   }
 
