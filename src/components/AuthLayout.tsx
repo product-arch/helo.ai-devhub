@@ -1,6 +1,7 @@
 import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import { Moon, Sun, Shield, CheckCircle, Clock } from "lucide-react";
+import authBg from "@/assets/auth-bg.jpg.asset.json";
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -12,7 +13,10 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left panel - branding */}
-      <div className="hidden md:flex md:w-[480px] lg:w-[520px] geometric-bg flex-col justify-between p-10">
+      <div
+        className="hidden md:flex md:w-[480px] lg:w-[520px] flex-col justify-between p-10 bg-cover bg-center"
+        style={{ backgroundImage: `url(${authBg.url})` }}
+      >
         <div className="inline-flex flex-col self-start bg-white/55 backdrop-blur-md ring-1 ring-white/60 shadow-[0_8px_32px_-8px_rgba(168,0,0,0.15)] rounded-2xl px-5 py-4">
           <h1 className="text-xl font-semibold tracking-tight font-mono text-[#a80000]">Helo.ai</h1>
           <p className="text-sm text-[#420000] mt-1 font-bold font-mono">Developer Console</p>
@@ -52,7 +56,10 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
       </div>
 
       {/* Mobile header */}
-      <div className="md:hidden geometric-bg geometric-bg--compact px-6 py-5 flex items-center justify-between">
+      <div
+        className="md:hidden px-6 py-5 flex items-center justify-between bg-cover bg-center"
+        style={{ backgroundImage: `url(${authBg.url})` }}
+      >
         <div className="bg-white/55 backdrop-blur-md ring-1 ring-white/60 shadow-[0_8px_32px_-8px_rgba(168,0,0,0.15)] rounded-2xl px-4 py-2">
           <h1 className="text-lg font-semibold tracking-tight font-mono text-[#a80000]">Helo.ai</h1>
           <p className="text-xs font-bold font-mono text-[#420000]">Developer Console</p>
